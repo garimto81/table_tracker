@@ -57,6 +57,13 @@ select,input,button{background:#0f1320;color:var(--text);border:1px solid #2a324
 /* 설정 토글 */
 .settings{display:flex;gap:8px;align-items:center}
 .settings input{min-width:220px}
+
+/* === Review 2-Panel 레이아웃 (v1.2.0) === */
+#panelReview{display:flex;flex-direction:column;gap:12px}
+#reviewContainer{display:flex;gap:12px;width:100%}
+#list{flex:0 0 40%;max-height:75vh;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px;background:#0e1320}
+#detail{flex:1;max-height:75vh;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:12px;background:#0e1320}
+.seatCard.selected{border:2px solid var(--acc);background:rgba(42,111,255,.1)}
 </style>
 </head>
 <body>
@@ -137,8 +144,10 @@ select,input,button{background:#0f1320;color:var(--text);border:1px solid #2a324
   <div class="panel hidden" id="panelReview">
     <h3>Review</h3>
     <div class="row"><button id="refreshList" type="button">새로고침</button><span id="listInfo" class="small muted"></span></div>
-    <div id="list" style="max-height:28vh;overflow:auto;margin-top:6px"></div>
-    <div id="detail" class="small" style="margin-top:6px"></div>
+    <div id="reviewContainer">
+      <div id="list"></div>
+      <div id="detail" class="small"></div>
+    </div>
   </div>
 </div>
 
@@ -189,9 +198,14 @@ function initFromConfig(data){
   document.getElementById('undoBtn').onclick=undoOnce;
   document.getElementById('commitBtn').onclick=commitHand;
   document.getElementById('newHandBtn').onclick=()=>resetHandState(true);
-  document.getElementById('refreshList').onclick=loadList;
+  document.getElementById('refreshList').onclick=()=>loadList(true);
   document.getElementById('modeRecord').onclick=()=>setMode('record');
   document.getElementById('modeReview').onclick=()=>setMode('review');
+
+  // v1.2.0: 무한 스크롤
+  document.getElementById('list').addEventListener('scroll', e=>{
+    const el=e.target; if(el.scrollHeight-el.scrollTop-el.clientHeight<100) loadList(false);
+  });
 
   setMode('record');
   buildBoardUI('boardRowRecord', toggleBoardCard);
@@ -214,7 +228,7 @@ function setMode(m){
   const rec=document.getElementById('panelRecord'), rev=document.getElementById('panelReview');
   const bR=document.getElementById('modeRecord'), bV=document.getElementById('modeReview');
   if(m==='record'){rec.classList.remove('hidden'); rev.classList.add('hidden'); bR.classList.add('btnPrimary'); bV.classList.remove('btnPrimary');}
-  else{rev.classList.remove('hidden'); rec.classList.add('hidden'); bV.classList.add('btnPrimary'); bR.classList.remove('btnPrimary');}
+  else{rev.classList.remove('hidden'); rec.classList.add('hidden'); bV.classList.add('btnPrimary'); bR.classList.remove('btnPrimary'); loadList(true);}
 }
 
 /* ===== 테이블 변경 ===== */
@@ -501,27 +515,47 @@ function getBoardObjectForSave(){
   return {f1:b[0]||'',f2:b[1]||'',f3:b[2]||'',turn:b[3]||'',river:b[4]||''};
 }
 
-/* 목록 */
-function loadList(){
+/* === Review 상태 관리 (v1.2.0) === */
+const reviewState={page:1,size:10,total:0,loading:false,hasMore:true,selectedId:null};
+
+function loadList(reset){
+  if(reset){ reviewState.page=1; reviewState.hasMore=true; reviewState.total=0; }
+  if(reviewState.loading||!reviewState.hasMore) return;
+  reviewState.loading=true;
   const box=document.getElementById('list');
-  box.innerHTML='<div class="small muted" style="padding:8px">불러오는 중…</div>';
+  if(reset) box.innerHTML='<div class="small muted" style="padding:8px">불러오는 중…</div>';
   google.script.run.withSuccessHandler(data=>{
+    reviewState.loading=false;
     if(data.error){ box.innerHTML=`<div class="small" style="color:#ffbdbd">오류: ${data.error}</div>`; return; }
-    document.getElementById('listInfo').textContent=`총 ${data.total}건`;
-    box.innerHTML='';
-    data.items.forEach(it=>{
-      const div=document.createElement('div'); div.className='seatCard';
-      const arr = boardArrayAny_(it.board||it)||[];
-      div.innerHTML=`
-        <div><b>#${it.hand_no||'-'}</b> · Table ${it.table_id||'-'} · BTN ${it.btn_seat||'-'} · <span class="badge">${it.start_street||'-'}</span></div>
-        <div class="small muted">${it.started_at||''}</div>
-        <div class="small muted">Board: ${arr.length?arr.map(prettyCard).join(' '):'-'}</div>`;
-      div.onclick=()=>loadDetail(it.hand_id);
-      box.appendChild(div);
-    });
+    reviewState.total=data.total;
+    document.getElementById('listInfo').textContent=`총 ${reviewState.total}건 (${reviewState.page}페이지)`;
+    if(reset) box.innerHTML='';
+    if(!data.items||data.items.length===0){ reviewState.hasMore=false; return; }
+    data.items.forEach(it=>box.appendChild(createListItem(it)));
+    reviewState.page++;
+    reviewState.hasMore=(box.children.length<reviewState.total);
   }).withFailureHandler(err=>{
+    reviewState.loading=false;
     box.innerHTML=`<div class="small" style="color:#ffbdbd">로드 오류: ${(err.message||err)}</div>`;
-  }).queryHands({}, {num:1,size:50});
+  }).queryHands({},{num:reviewState.page,size:reviewState.size});
+}
+
+function createListItem(it){
+  const div=document.createElement('div'); div.className='seatCard'; div.dataset.handId=it.hand_id;
+  const arr=boardToArray(it.board||it)||[];
+  div.innerHTML=`
+    <div><b>#${it.hand_no||'-'}</b> · Table ${it.table_id||'-'} · BTN ${it.btn_seat||'-'} · <span class="badge">${it.start_street||'-'}</span></div>
+    <div class="small muted">${it.started_at||''}</div>
+    <div class="small muted">Board: ${arr.length?arr.map(prettyCard).join(' '):'-'}</div>`;
+  div.onclick=()=>selectAndLoadDetail(it.hand_id,div);
+  return div;
+}
+
+function selectAndLoadDetail(id,el){
+  document.querySelectorAll('#list .seatCard').forEach(d=>d.classList.remove('selected'));
+  el.classList.add('selected');
+  reviewState.selectedId=id;
+  loadDetail(id);
 }
 
 /* 상세 */
@@ -542,7 +576,7 @@ function loadDetail(id){
           d.innerHTML = `<div class="small" style="color:#ffbdbd">형식 오류(빈 head) · id=${id}<br/><code>${sample}</code></div>`;
           return;
         }
-        d.innerHTML = renderDetailBlock_(head, acts, stacks);
+        d.innerHTML = renderDetailContent(head, acts);
       }catch(err){
         const msg=(err && (err.message||err.toString()))||'unknown';
         d.innerHTML = `<div class="small" style="color:#ffbdbd">클라이언트 렌더 오류: ${msg} · id=${id}</div>`;
@@ -572,56 +606,48 @@ function cardCode(cs){
   }
   return '';
 }
-function boardArrayAny_(b){
+function boardToArray(b){
   if(!b) return [];
-  if (Array.isArray(b)) return b.map(cardCode).filter(Boolean);
-  const keys1 = ['f1','f2','f3','turn','river'];
-  const keys2 = ['board_f1','board_f2','board_f3','board_turn','board_river'];
-  const keys3 = ['flop1','flop2','flop3','turn','river'];
-  const arr1 = keys1.map(k=>cardCode(b[k])).filter(Boolean); if(arr1.length) return arr1;
-  const arr2 = keys2.map(k=>cardCode(b[k])).filter(Boolean); if(arr2.length) return arr2;
-  const arr3 = keys3.map(k=>cardCode(b[k])).filter(Boolean); if(arr3.length) return arr3;
-  if (b.board) return boardArrayAny_(b.board);
-  return [];
+  if(Array.isArray(b)) return b.map(cardCode).filter(Boolean);
+  // 서버 응답 포맷: {f1,f2,f3,turn,river} 또는 {board_f1,board_f2,...}
+  const keys=['f1','f2','f3','turn','river'].map(k=>cardCode(b[k])).filter(Boolean);
+  if(keys.length) return keys;
+  const keys2=['board_f1','board_f2','board_f3','board_turn','board_river'].map(k=>cardCode(b[k])).filter(Boolean);
+  return keys2.length?keys2:(b.board?boardToArray(b.board):[]);
 }
-function suitClass_(cs){ const cc=cardCode(cs); const s=cc.slice(-1); return (s==='s'?'cb-s':s==='h'?'cb-h':s==='d'?'cb-d':'cb-c'); }
-function cardBadge_(cs){
-  const cc=cardCode(cs); if(!cc) return '';
-  const suit = cc.slice(-1), r = cc.slice(0,-1);
-  const sym = suit==='s'?'♠':suit==='h'?'♥':suit==='d'?'♦':'♣';
-  return `<span class="cardBadge ${suitClass_(cc)}">${r}${sym}</span>`;
-}
-function boardBadges_(b){
-  const arr = boardArrayAny_(b); if(!arr.length) return '<span class="muted">-</span>';
-  return `<div style="display:flex;gap:10px;flex-wrap:wrap">${arr.map(cardBadge_).join('')}</div>`;
+function boardBadges(b){
+  const arr=boardToArray(b); if(!arr.length) return '<span class="muted">-</span>';
+  return `<div style="display:flex;gap:10px;flex-wrap:wrap">${arr.map(cs=>{
+    const cc=cardCode(cs); if(!cc) return '';
+    const suit=cc.slice(-1), r=cc.slice(0,-1);
+    const sym=suit==='s'?'♠':suit==='h'?'♥':suit==='d'?'♦':'♣';
+    const cl=suit==='s'?'cb-s':suit==='h'?'cb-h':suit==='d'?'cb-d':'cb-c';
+    return `<span class="cardBadge ${cl}">${r}${sym}</span>`;
+  }).join('')}</div>`;
 }
 function getSeatName(seat){
   const s = (S.roster[S.curTable]||[]).find(x=>toInt(x.seat)===toInt(seat));
   return s?.player || `Seat ${seat}`;
 }
 function seatNameOnlyFmt(seat){ return seatNameOnly(seat, getSeatName(seat)); }
-function actClass_(a){
-  const k = (a.action||'').toUpperCase();
-  if(k==='CHECK') return 'act-chk'; if(k==='CALL') return 'act-call';
-  if(k==='BET') return 'act-bet'; if(k==='RAISE') return 'act-raise';
-  if(k==='ALLIN') return 'act-allin'; if(k==='FOLD') return 'act-fold';
-  return 'act-fold';
-}
-
-function formatActBadge_(a){
-  const name = seatNameOnlyFmt(a.seat); const amt = a.amount_input? ` ${a.amount_input}`:'';
-  return `<span class="actBadge ${actClass_(a)}">${name} ${a.action}${amt} · pot ${a.pot_after}</span>`;
-}
-function groupByStreet_(acts){
+function groupByStreet(acts){
   const g={PREFLOP:[],FLOP:[],TURN:[],RIVER:[]};
   (acts||[]).forEach(a=>{ const s=(a.street||'').toUpperCase(); if(g[s]) g[s].push(a); else g.RIVER.push(a); });
   return g;
 }
-function section_(title, arr){
-  return arr && arr.length ? `<div class="streetTitle">${title}</div><div class="badgeRow">${arr.map(formatActBadge_).join('')}</div>` : '';
+function formatStreetSection(title, arr){
+  if(!arr||!arr.length) return '';
+  const badges=arr.map(a=>{
+    const name=seatNameOnly(a.seat, getSeatName(a.seat));
+    const amt=a.amount_input?` ${a.amount_input}`:'';
+    const k=(a.action||'').toUpperCase();
+    const cl=k==='CHECK'?'act-chk':k==='CALL'?'act-call':k==='BET'?'act-bet':k==='RAISE'?'act-raise':k==='ALLIN'?'act-allin':'act-fold';
+    return `<span class="actBadge ${cl}">${name} ${a.action}${amt} · pot ${a.pot_after}</span>`;
+  }).join('');
+  return `<div class="streetTitle">${title}</div><div class="badgeRow">${badges}</div>`;
 }
-function renderDetailBlock_(head,acts,stacksSnap){
-  const b=head.board||head||{}; const g=groupByStreet_(acts||[]);
+function renderDetailContent(head,acts){
+  const b=head.board||head||{}; const g=groupByStreet(acts||[]);
   const stacks = safeJson_(head.stacks_json||'{}'); const holes = safeJson_(head.holes_json||'{}');
   const stackLine = (stacks && Object.keys(stacks).length)
     ? `<div class="small muted" style="margin:6px 0">Stacks @${head.start_street||''}: `
@@ -637,13 +663,13 @@ function renderDetailBlock_(head,acts,stacksSnap){
 
   return `<div class="small">Hand #${head.hand_no||'-'} · ${head.hand_id||''}</div>
     <div class="small">Table ${head.table_id||'-'} · BTN ${head.btn_seat||'-'} · <b>시작: ${head.start_street||'-'}</b></div>
-    <div style="margin-top:8px">${boardBadges_(b)}</div>
+    <div style="margin-top:8px">${boardBadges(b)}</div>
     ${stackLine}
     ${holeLine}
-    ${section_('PREFLOP', g.PREFLOP)}
-    ${section_('FLOP', g.FLOP)}
-    ${section_('TURN', g.TURN)}
-    ${section_('RIVER', g.RIVER)}`;
+    ${formatStreetSection('PREFLOP', g.PREFLOP)}
+    ${formatStreetSection('FLOP', g.FLOP)}
+    ${formatStreetSection('TURN', g.TURN)}
+    ${formatStreetSection('RIVER', g.RIVER)}`;
 }
 
 /* ===== 유틸 ===== */

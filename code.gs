@@ -271,7 +271,13 @@ function queryHands(filter,paging){
     const sh=appSS_().getSheetByName(SH.HANDS);
     const {rows,map}=readAll_(sh);
     const idxStart=map['started_at'];
-    rows.sort((a,b)=>String(b[idxStart]).localeCompare(String(a[idxStart])));
+    // v1.2.0 정렬 버그 수정: Date/String 혼합 대응
+    rows.sort((a,b)=>{
+      const aVal=a[idxStart], bVal=b[idxStart];
+      const aTime=(aVal instanceof Date)?aVal.getTime():(new Date(aVal).getTime()||0);
+      const bTime=(bVal instanceof Date)?bVal.getTime():(new Date(bVal).getTime()||0);
+      return bTime-aTime; // 최신순(내림차순)
+    });
     const size=(paging&&paging.size)?Number(paging.size):50;
     const page=(paging&&paging.num)?Number(paging.num):1;
     const slice=rows.slice((page-1)*size,(page-1)*size+size);
