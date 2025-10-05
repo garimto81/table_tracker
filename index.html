@@ -644,10 +644,11 @@ function groupByStreet(acts){
   (acts||[]).forEach(a=>{ const s=(a.street||'').toUpperCase(); if(g[s]) g[s].push(a); else g.RIVER.push(a); });
   return g;
 }
-function formatStreetSection(title, arr){
+function formatStreetSection(title,arr,tableId){
   if(!arr||!arr.length) return '';
   const badges=arr.map(a=>{
-    const name=seatNameOnly(a.seat, getSeatName(a.seat));
+    const fullName=getSeatNameByTable(tableId,a.seat);
+    const name=seatNameOnly(a.seat,fullName);
     const amt=a.amount_input?` ${a.amount_input}`:'';
     const k=(a.action||'').toUpperCase();
     const cl=k==='CHECK'?'act-chk':k==='CALL'?'act-call':k==='BET'?'act-bet':k==='RAISE'?'act-raise':k==='ALLIN'?'act-allin':'act-fold';
@@ -688,16 +689,24 @@ function renderPotHeader(head,acts){
   </div>`;
 }
 
+function getSeatNameByTable(tableId,seat){
+  const roster=S.roster[tableId]||[];
+  const s=roster.find(x=>toInt(x.seat)===toInt(seat));
+  return s?.player || `Seat ${seat}`;
+}
+
 function renderPlayerRows(head){
   const stacks=safeJson_(head.stacks_json||'{}');
   const holes=safeJson_(head.holes_json||'{}');
   const btnSeat=toInt(head.btn_seat);
+  const tableId=head.table_id;
   const seats=Object.keys(stacks).sort((a,b)=>toInt(a)-toInt(b));
   if(!seats.length) return '';
 
   const rows=seats.map(s=>{
     const seat=toInt(s);
-    const name=seatNameOnly(seat,getSeatName(seat));
+    const fullName=getSeatNameByTable(tableId,seat);
+    const name=seatNameOnly(seat,fullName);
     const pos=(seat===btnSeat)?' (BTN)':'';
     const holeCards=holes[s]||[];
     const holeHTML=(holeCards[0]&&holeCards[1])
@@ -727,10 +736,11 @@ function renderPotFooter(head,acts){
 
 function renderDetailContent(head,acts){
   const b=head.board||head||{}; const g=groupByStreet(acts||[]);
+  const tableId=head.table_id;
 
   return `${renderPotHeader(head,acts)}
     <div class="small muted">${head.hand_id||''}</div>
-    <div class="small">Table ${head.table_id||'-'} · BTN ${head.btn_seat||'-'} · <b>시작: ${head.start_street||'-'}</b></div>
+    <div class="small">Table ${tableId||'-'} · BTN ${head.btn_seat||'-'} · <b>시작: ${head.start_street||'-'}</b></div>
 
     <div class="boardSection">
       <div class="small muted">보드</div>
@@ -739,10 +749,10 @@ function renderDetailContent(head,acts){
 
     ${renderPlayerRows(head)}
 
-    ${formatStreetSection('PREFLOP',g.PREFLOP)}
-    ${formatStreetSection('FLOP',g.FLOP)}
-    ${formatStreetSection('TURN',g.TURN)}
-    ${formatStreetSection('RIVER',g.RIVER)}
+    ${formatStreetSection('PREFLOP',g.PREFLOP,tableId)}
+    ${formatStreetSection('FLOP',g.FLOP,tableId)}
+    ${formatStreetSection('TURN',g.TURN,tableId)}
+    ${formatStreetSection('RIVER',g.RIVER,tableId)}
 
     ${renderPotFooter(head,acts)}`;
 }
