@@ -64,6 +64,19 @@ select,input,button{background:#0f1320;color:var(--text);border:1px solid #2a324
 #list{flex:0 0 40%;max-height:75vh;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:8px;background:#0e1320}
 #detail{flex:1;max-height:75vh;overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:12px;background:#0e1320}
 .seatCard.selected{border:2px solid var(--acc);background:rgba(42,111,255,.1)}
+
+/* === Review 상세 디자인 (v1.2.1) === */
+.potHeader{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);margin-bottom:8px}
+.boardSection{margin:12px 0}
+.playerSection{margin:12px 0}
+.playerRow{display:grid;grid-template-columns:2fr 3fr 1fr;gap:12px;padding:6px 0;align-items:center}
+.playerName{font-weight:800}
+.playerHole{display:flex;gap:4px}
+.playerStack{text-align:right;color:var(--muted)}
+.sectionDivider{height:1px;background:var(--line);margin:8px 0}
+.potFooter{text-align:center;padding:12px;font-weight:800;color:var(--acc)}
+.cardBadgeSmall{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 6px;border-radius:6px;border:3px solid;font-size:0.8rem;font-weight:800}
+.boardSmall{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -543,10 +556,12 @@ function loadList(reset){
 function createListItem(it){
   const div=document.createElement('div'); div.className='seatCard'; div.dataset.handId=it.hand_id;
   const arr=boardToArray(it.board||it)||[];
+  const boardBadgesHTML=arr.slice(0,3).map(cs=>renderCardBadge(cs,'small')).join('')+(arr.length>3?'...':'');
+
   div.innerHTML=`
     <div><b>#${it.hand_no||'-'}</b> · Table ${it.table_id||'-'} · BTN ${it.btn_seat||'-'} · <span class="badge">${it.start_street||'-'}</span></div>
     <div class="small muted">${it.started_at||''}</div>
-    <div class="small muted">Board: ${arr.length?arr.map(prettyCard).join(' '):'-'}</div>`;
+    <div class="boardSmall">${boardBadgesHTML||'<span class="muted">-</span>'}</div>`;
   div.onclick=()=>selectAndLoadDetail(it.hand_id,div);
   return div;
 }
@@ -617,13 +632,7 @@ function boardToArray(b){
 }
 function boardBadges(b){
   const arr=boardToArray(b); if(!arr.length) return '<span class="muted">-</span>';
-  return `<div style="display:flex;gap:10px;flex-wrap:wrap">${arr.map(cs=>{
-    const cc=cardCode(cs); if(!cc) return '';
-    const suit=cc.slice(-1), r=cc.slice(0,-1);
-    const sym=suit==='s'?'♠':suit==='h'?'♥':suit==='d'?'♦':'♣';
-    const cl=suit==='s'?'cb-s':suit==='h'?'cb-h':suit==='d'?'cb-d':'cb-c';
-    return `<span class="cardBadge ${cl}">${r}${sym}</span>`;
-  }).join('')}</div>`;
+  return `<div style="display:flex;gap:10px;flex-wrap:wrap">${arr.map(cs=>renderCardBadge(cs)).join('')}</div>`;
 }
 function getSeatName(seat){
   const s = (S.roster[S.curTable]||[]).find(x=>toInt(x.seat)===toInt(seat));
@@ -646,30 +655,96 @@ function formatStreetSection(title, arr){
   }).join('');
   return `<div class="streetTitle">${title}</div><div class="badgeRow">${badges}</div>`;
 }
+/* === Review 상세 렌더링 헬퍼 (v1.2.1) === */
+function renderCardBadge(cs,size='large'){
+  const cc=cardCode(cs); if(!cc) return '';
+  const suit=cc.slice(-1), r=cc.slice(0,-1);
+  const sym=suit==='s'?'♠':suit==='h'?'♥':suit==='d'?'♦':'♣';
+  const cl=suit==='s'?'cb-s':suit==='h'?'cb-h':suit==='d'?'cb-d':'cb-c';
+  const sizeClass=size==='small'?'cardBadgeSmall':'cardBadge';
+  return `<span class="${sizeClass} ${cl}">${r}${sym}</span>`;
+}
+
+function calculateFinalPot(head,acts){
+  if(head.pot_final) return toInt(head.pot_final);
+  let maxPot=0;
+  (acts||[]).forEach(a=>{const val=toInt(a.pot_after); if(val>maxPot) maxPot=val;});
+  return maxPot||toInt(head.pre_pot)||0;
+}
+
+function formatPotWithBB(pot,bb){
+  pot=toInt(pot);
+  if(!bb||bb===0) return pot.toLocaleString();
+  const bbVal=(pot/bb).toFixed(1);
+  return `${pot.toLocaleString()} (${bbVal}BB)`;
+}
+
+function renderPotHeader(head,acts){
+  const pot=calculateFinalPot(head,acts);
+  const bb=toInt(localStorage.getItem('phl_bbSize')||0);
+  return `<div class="potHeader">
+    <div><b>핸드 #${head.hand_no||'-'}</b></div>
+    <div><b>팟: ${formatPotWithBB(pot,bb)}</b></div>
+  </div>`;
+}
+
+function renderPlayerRows(head){
+  const stacks=safeJson_(head.stacks_json||'{}');
+  const holes=safeJson_(head.holes_json||'{}');
+  const btnSeat=toInt(head.btn_seat);
+  const seats=Object.keys(stacks).sort((a,b)=>toInt(a)-toInt(b));
+  if(!seats.length) return '';
+
+  const rows=seats.map(s=>{
+    const seat=toInt(s);
+    const name=seatNameOnly(seat,getSeatName(seat));
+    const pos=(seat===btnSeat)?' (BTN)':'';
+    const holeCards=holes[s]||[];
+    const holeHTML=(holeCards[0]&&holeCards[1])
+      ?renderCardBadge(holeCards[0])+renderCardBadge(holeCards[1])
+      :'<span class="muted">-</span>';
+    const stack=stacks[s]?toInt(stacks[s]).toLocaleString():'-';
+    return `<div class="playerRow">
+      <span class="playerName">${name}${pos}</span>
+      <span class="playerHole">${holeHTML}</span>
+      <span class="playerStack">${stack}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="playerSection">
+    <div class="sectionDivider"></div>
+    ${rows}
+    <div class="sectionDivider"></div>
+  </div>`;
+}
+
+function renderPotFooter(head,acts){
+  const pot=calculateFinalPot(head,acts);
+  const bb=toInt(localStorage.getItem('phl_bbSize')||0);
+  return `<div class="sectionDivider"></div>
+    <div class="potFooter">최종 팟: ${formatPotWithBB(pot,bb)}</div>`;
+}
+
 function renderDetailContent(head,acts){
   const b=head.board||head||{}; const g=groupByStreet(acts||[]);
-  const stacks = safeJson_(head.stacks_json||'{}'); const holes = safeJson_(head.holes_json||'{}');
-  const stackLine = (stacks && Object.keys(stacks).length)
-    ? `<div class="small muted" style="margin:6px 0">Stacks @${head.start_street||''}: `
-      + Object.keys(stacks).sort((a,b)=>a-b).map(s=>`${seatNameOnlyFmt(s)}=${stacks[s]}`).join(', ')
-      + `</div>` : '';
-  const holeLine = (holes && Object.keys(holes).length)
-    ? `<div class="small muted" style="margin:6px 0">Holes: `
-      + Object.keys(holes).sort((a,b)=>a-b).map(s=>{
-          const v=holes[s]||[]; const h=(v[0]&&v[1])?`${prettyCard(v[0])}${prettyCard(v[1])}`:'-';
-          return `${seatNameOnlyFmt(s)}=${h}`;
-        }).join(', ')
-      + `</div>` : '';
 
-  return `<div class="small">Hand #${head.hand_no||'-'} · ${head.hand_id||''}</div>
+  return `${renderPotHeader(head,acts)}
+    <div class="small muted">${head.hand_id||''}</div>
     <div class="small">Table ${head.table_id||'-'} · BTN ${head.btn_seat||'-'} · <b>시작: ${head.start_street||'-'}</b></div>
-    <div style="margin-top:8px">${boardBadges(b)}</div>
-    ${stackLine}
-    ${holeLine}
-    ${formatStreetSection('PREFLOP', g.PREFLOP)}
-    ${formatStreetSection('FLOP', g.FLOP)}
-    ${formatStreetSection('TURN', g.TURN)}
-    ${formatStreetSection('RIVER', g.RIVER)}`;
+
+    <div class="boardSection">
+      <div class="small muted">보드</div>
+      ${boardBadges(b)}
+    </div>
+
+    ${renderPlayerRows(head)}
+
+    ${formatStreetSection('PREFLOP',g.PREFLOP)}
+    ${formatStreetSection('FLOP',g.FLOP)}
+    ${formatStreetSection('TURN',g.TURN)}
+    ${formatStreetSection('RIVER',g.RIVER)}
+
+    ${renderPotFooter(head,acts)}`;
 }
 
 /* ===== 유틸 ===== */
