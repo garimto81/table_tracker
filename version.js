@@ -14,8 +14,8 @@ const VERSION = {
     '코드 품질 개선 (중복 제거, 모바일 가독성)'
   ],
   deployment: {
-    id: '@9',
-    description: 'v2.2.0 - Poker Room/Table Name display + addPlayer default values',
+    id: '@10',
+    description: 'v2.2.0 - Poker Room/Table Name + auto-sort + center alignment',
     url: 'https://script.google.com/macros/s/AKfycbzUVHRBgM30-pGruySbzz4uWHuG1YhPN9pyKwuku5azdPD8y2QNKnk63DNCP4hzpBeitA/exec',
     scriptId: '17reWlyDY3W3aBsK9VYTnJ1C3iXnWhmzxOHJ-_s54S9QYje3COrwId38O',
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
@@ -30,13 +30,9 @@ const VERSION = {
     'docs/PLAN.md': 'v2.2.0'
   },
   status: {
-    state: '🔴 버그 수정 필요',
-    phase: 'Phase 1.5 (70% 완료)',
-    blockers: [
-      '🔴 A/B열 자동 입력 미작동',
-      '🟡 중앙정렬 미적용',
-      '🟡 시트 정렬 미적용'
-    ],
+    state: '🟢 정상',
+    phase: 'Phase 1.5 (100% 완료)',
+    blockers: [],
     lastCompleted: [
       '✅ XSS 방어 강화 (v2.0.2)',
       '✅ Nationality 입력 UX 개선 (v2.1.0)',
