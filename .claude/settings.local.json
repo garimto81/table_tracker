@@ -3,7 +3,9 @@
     "allow": [
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: 버전 관리 시스템 구축 (version.js SINGLE SOURCE OF TRUTH)\n\nversion.js 추가:\n- 모든 버전 정보를 1곳에서 관리\n- 배포 정보, 파일별 버전, 상태, 다음 계획 통합\n- Google Apps Script + Browser 양방향 export\n\nSTATUS.md 동기화:\n- v2.0.2 → v2.2.0 업데이트\n- Phase 1.5 진행 상황 반영 (30% 완료)\n- 블로커 추가: migrateAddPokerRoomColumns 실행 + 웹앱 테스트\n- 최근 완료 3개 업데이트 (v2.2.0, v2.1.0, v2.0.1)\n\n버전 관리 방안 1 적용 완료.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit -m \"$(cat <<''EOF''\nrefactor: 모든 버전 태깅을 version.js 참조로 통일\n\ntracker_gs.js:\n- 헤더 주석에서 버전 히스토리 제거\n- version.js 참조 안내 추가\n- TRACKER_VERSION 상수를 version.js와 수동 동기화\n\ntracker.html:\n- 헤더 주석에서 하드코딩 버전 제거\n- version.js 참조 안내 추가\n- 화면 표시 버전을 window.TRACKER_VERSION에서 자동 로드\n\n5개 문서 (PLAN, PRD, LLD, STATUS, CHANGELOG):\n- 헤더 버전 제거 (예: \"v2.2.0\" → \"[version.js] 참조\")\n- version.js 링크 추가\n\nCHANGELOG.md:\n- v2.2.0 엔트리 상세화 (버전 관리 시스템 추가)\n\n배포:\n- clasp push 완료 (4 files)\n- 모든 파일이 version.js를 SINGLE SOURCE OF TRUTH로 참조\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
