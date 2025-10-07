@@ -3,20 +3,52 @@
 > **현재 상태** | 버전: [version.js](../version.js) 참조
 
 ## 📌 현재 위치
-**버전**: v2.2.0 (2025-10-07) - [version.js](../version.js)에서 관리
-**현재 상태**: 🟡 **테스트 필요** - Phase 1.5 코드 작업 완료, 마이그레이션 + 테스트 대기
+**버전**: v2.4.0 (2025-10-07) - [version.js](../version.js)에서 관리
+**현재 상태**: ⚠️ **개선 필요** - Phase 1.7 완료, CSS 클래스 중복 이슈 해결 필요
 
 ---
 
 ## ⚠️ 블로커 (Critical)
 
-없음 - 모든 이슈 해결 완료 ✅
+### CSS 클래스 중복으로 스마트폰 최적화 미작동
+- **문제**: `.flag`, `.chips` 등 클래스가 키 플레이어 뷰와 테이블 뷰에서 중복
+- **영향**: 나중 규칙이 둘 다에 적용되어 의도한 크기 차이 무시됨
+- **해결**: 클래스명 분리 필요 (`.kp-flag`, `.tv-flag` 등)
+
+### Viewport 기본 폰트 크기 제약
+- **문제**: `font-size: clamp(15px, 4.8vw, 20px)` - 최대 20px로 제한
+- **영향**: `1.7rem` = 최대 34px (여전히 작음)
+- **해결**: 절대 크기(`px`) 직접 사용 또는 최대값 증가
+
+### Flexbox 선택자 오류
+- **문제**: `#viewTable .wrap` - HTML에서 `.wrap`이 `#viewTable` 밖에 있음
+- **영향**: 테이블 뷰 화면 꽉 채우기 미작동
+- **해결**: 선택자 수정 또는 HTML 구조 변경
 
 ---
 
 ## ✅ 최근 완료 (최신 3개)
 
-### 1. v2.2.0 - Poker Room/Table Name 표시 추가 ✅ 완료
+### 1. v2.4.0 - 모바일 텍스트 크기 최적화 ✅ 완료
+**날짜**: 2025-10-07
+**변경사항**:
+- ✅ 키 플레이어 뷰 텍스트 100% 확대
+- ✅ 테이블 뷰 텍스트 30% 추가 확대
+- ✅ 테이블 뷰 9명 화면 높이 꽉 채우기 (flex: 1)
+- ✅ 오버레이 텍스트/버튼 대폭 확대 (1.4~1.8rem)
+- ✅ 입력 필드/버튼 최소 높이 56px
+- ✅ 배포 완료 (@12)
+
+### 2. v2.3.0 - UI/UX 모바일 최적화 ✅ 완료
+**날짜**: 2025-10-07
+**변경사항**:
+- ✅ Key Player Card 2줄 압축
+- ✅ Room/Table Info 가독성 개선
+- ✅ 칩 시각적 강조 (┃750k┃, ▲▼)
+- ✅ [T15 관리] 버튼 제거
+- ✅ 배포 완료 (@11)
+
+### 3. v2.2.0 - Poker Room/Table Name 표시 추가 ✅ 완료
 **날짜**: 2025-10-07
 **변경사항**:
 - ✅ Type 시트 A/B열 구조 설계 완료
@@ -50,36 +82,37 @@
 
 ## 🚧 진행 중
 
-없음 - Phase 1.5 완료
+없음 - Phase 1.7 완료
 
 ---
 
 ## 📝 AI 메모리
 
 ### 마지막 작업
-- **version.js 생성**: SINGLE SOURCE OF TRUTH 버전 관리 시스템 구축
-- **STATUS.md 동기화**: v2.0.2 → v2.2.0 업데이트
-- **Phase 1.5 코드 작업 완료**: Poker Room/Table Name 표시 기능 구현
-- **배포**: @8 완료 (v2.2.0 - Poker Room/Table Name display final)
+- **v2.4.0 배포**: 모바일 텍스트 크기 최적화 (@12)
+- **키 플레이어 뷰**: 텍스트 100% 확대
+- **테이블 뷰**: 텍스트 30% 추가 확대 + 화면 꽉 채우기
+- **오버레이**: 터치 친화적 크기로 확대 (56px 최소 높이)
 
 ### 다음 할 일
-1. **마이그레이션**: migrateAddPokerRoomColumns() 실행 (Apps Script Editor)
-2. **테스트**: 웹앱에서 Poker Room/Table Name 표시 확인
-3. **문서 갱신**: 테스트 완료 후 STATUS.md 블로커 제거, Phase 1.5 완료 처리
-4. **다음 Phase**: v2.3.0 - 키 플레이어 테이블 이동 기능 (Phase 2.1)
+1. **CSS 클래스 분리**: `.flag` → `.kp-flag`, `.tv-flag` 등으로 분리
+2. **폰트 크기 수정**: `rem` → `px` 직접 사용 또는 `:root` 최대값 증가
+3. **Flexbox 수정**: `#viewTable .wrap` 선택자 수정
+4. **테스트**: 실제 스마트폰에서 텍스트 크기 확인
+5. **다음 Phase**: v2.4.1 - CSS 구조 개선
 
 ### 프로젝트 구조
-- **Frontend**: [tracker.html](../tracker.html) (v1.5, 461줄)
-- **Backend**: [tracker_gs.js](../tracker_gs.js) (v2.0.2, 658줄)
+- **Frontend**: [tracker.html](../tracker.html) (v2.4.0, 509줄)
+- **Backend**: [tracker_gs.js](../tracker_gs.js) (v2.4.0, 658줄)
 - **Spreadsheet**: `19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4` (독립)
 - **문서**: [PLAN](PLAN.md) | [PRD](PRD.md) | [LLD](LLD.md)
 
 ### 배포 정보
 - **Script ID**: `17reWlyDY3W3aBsK9VYTnJ1C3iXnWhmzxOHJ-_s54S9QYje3COrwId38O`
-- **최신 배포**: @8 (v2.2.0 - Poker Room/Table Name display final)
+- **최신 배포**: @12 (v2.4.0 - Mobile text size optimization)
 - **Deployment ID**: `AKfycbzUVHRBgM30-pGruySbzz4uWHuG1YhPN9pyKwuku5azdPD8y2QNKnk63DNCP4hzpBeitA`
 - **웹앱 URL**: `https://script.google.com/macros/s/AKfycbzUVHRBgM30-pGruySbzz4uWHuG1YhPN9pyKwuku5azdPD8y2QNKnk63DNCP4hzpBeitA/exec`
-- **상태**: 🟡 테스트 필요 (Phase 1.5 코드 완료, 마이그레이션 대기)
+- **상태**: ⚠️ 개선 필요 (CSS 클래스 중복 해결 필요)
 
 ### 핵심 기능
 1. **Key Player View**: 키 플레이어 목록 + 칩 변화량

@@ -31,13 +31,13 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
 .keyPlayerCard{background:var(--panel);border:1px solid var(--line);border-radius:var(--sp-md);padding:var(--sp-md);margin-bottom:var(--sp-sm);display:flex;flex-direction:column;gap:var(--sp-sm)}
 .cardRow{display:grid;grid-template-columns:auto 1fr auto;gap:var(--sp-sm);align-items:center}
 .playerInfo{display:flex;align-items:center;gap:var(--sp-xs);overflow:hidden}
-.tableLabel{background:#223266;padding:var(--sp-xs) var(--sp-sm);border-radius:var(--sp-xs);font-size:.75rem;font-weight:700;flex-shrink:0}
-.playerName{font-size:.85rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.flag{font-size:.85rem;flex-shrink:0}
+.tableLabel{background:#223266;padding:var(--sp-xs) var(--sp-sm);border-radius:var(--sp-xs);font-size:1.5rem;font-weight:700;flex-shrink:0}
+.playerName{font-size:1.7rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flag{font-size:1.7rem;flex-shrink:0}
 .chipInfo{display:flex;align-items:center;gap:var(--sp-xs)}
-.chips{font-size:1.05rem;font-weight:800;cursor:pointer;color:var(--acc);position:relative;padding:0 2px}
+.chips{font-size:2.1rem;font-weight:800;cursor:pointer;color:var(--acc);position:relative;padding:0 2px}
 .chips::before,.chips::after{content:'┃';color:var(--acc);opacity:0.4}
-.chipChange{font-size:.85rem;font-weight:700}
+.chipChange{font-size:1.7rem;font-weight:700}
 .chipChange.up{color:var(--green)}
 .chipChange.up::before{content:'▲ '}
 .chipChange.down{color:var(--red)}
@@ -46,25 +46,32 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
 .manageBtn{display:none}
 
 /* === Table View === */
-.backBtn{background:transparent;border:none;color:var(--acc);font-size:.9rem;cursor:pointer;padding:var(--sp-sm);margin-bottom:var(--sp-sm)}
-.playerRow{background:var(--panel);border:1px solid var(--line);border-radius:var(--sp-sm);padding:var(--sp-sm) var(--sp-md);margin-bottom:var(--sp-sm);display:flex;align-items:center;gap:var(--sp-sm)}
-.seat{font-weight:800;font-size:.85rem;min-width:28px}
-.name{flex:1;font-weight:700;font-size:.85rem}
-.keyStar{color:#fbbf24}
-.emptySeat{flex:1;color:var(--muted);font-style:italic}
-.addBtn{background:#223266;border:1px solid var(--acc);color:var(--acc);border-radius:var(--sp-sm);padding:var(--sp-xs) var(--sp-md);font-size:.8rem;cursor:pointer}
-.deleteBtn{background:transparent;border:none;font-size:1.1rem;cursor:pointer;padding:var(--sp-xs) var(--sp-sm)}
+#viewTable .wrap{display:flex;flex-direction:column;height:100%}
+#tablePlayerList{display:flex;flex-direction:column;gap:0;flex:1}
+.backBtn{background:transparent;border:none;color:var(--acc);font-size:.9rem;cursor:pointer;padding:var(--sp-sm);margin-bottom:var(--sp-sm);flex-shrink:0}
+.playerRow{background:var(--panel);border:2px solid var(--line);border-radius:var(--sp-md);padding:var(--sp-lg);display:flex;align-items:center;gap:var(--sp-md);flex:1;min-height:0}
+.playerRow.keyplayer{border-color:gold;box-shadow:0 0 12px rgba(255,215,0,0.4)}
+.playerRow:not(:last-child){margin-bottom:4px}
+.seat{font-weight:800;font-size:1.56rem;min-width:40px;background:var(--acc);color:var(--bg);padding:6px 12px;border-radius:6px}
+.name{flex:1;font-weight:700;font-size:1.69rem}
+.flag{font-size:1.95rem}
+.chips{font-size:1.95rem;font-weight:800;color:var(--acc);cursor:pointer;position:relative;padding:0 4px}
+.chips::before,.chips::after{content:'┃';opacity:0.4}
+.keyStar{color:#fbbf24;font-size:1.56rem;margin-left:6px}
+.emptySeat{flex:1;color:var(--muted);font-style:italic;font-size:1.43rem}
+.addBtn{background:#223266;border:1px solid var(--acc);color:var(--acc);border-radius:var(--sp-sm);padding:var(--sp-sm) var(--sp-lg);font-size:1.3rem;cursor:pointer}
+.deleteBtn{background:transparent;border:none;font-size:1.82rem;cursor:pointer;padding:var(--sp-sm)}
 
 /* === Overlay === */
 #overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:100}
 #overlay.show{display:flex}
 .overlayBox{width:min(440px,90vw);background:#0f1320;border:1px solid #2a3249;border-radius:var(--sp-md);padding:var(--sp-lg)}
-.overlayTitle{font-size:1rem;font-weight:700;margin-bottom:var(--sp-md);color:#a9b8ff}
-.overlayInput{width:100%;background:#0b0d12;color:var(--text);border:1px solid #2a3249;border-radius:var(--sp-sm);padding:var(--sp-md);font-size:1rem;margin-bottom:var(--sp-md)}
+.overlayTitle{font-size:1.8rem;font-weight:700;margin-bottom:var(--sp-md);color:#a9b8ff}
+.overlayInput{width:100%;background:#0b0d12;color:var(--text);border:1px solid #2a3249;border-radius:var(--sp-sm);padding:var(--sp-lg);font-size:1.6rem;margin-bottom:var(--sp-md);min-height:56px}
 .overlayInput:focus{outline:2px solid var(--acc)}
 .overlayActions{display:flex;gap:var(--sp-md);margin-top:var(--sp-md)}
-.btnCancel{background:#2a3249;border:1px solid #2a3249;color:var(--text);border-radius:var(--sp-sm);padding:var(--sp-md);font-size:.95rem;flex:1;cursor:pointer}
-.btnConfirm{background:var(--acc);border:1px solid var(--acc);color:#fff;border-radius:var(--sp-sm);padding:var(--sp-md);font-size:.95rem;flex:1;cursor:pointer;font-weight:700}
+.btnCancel{background:#2a3249;border:1px solid #2a3249;color:var(--text);border-radius:var(--sp-sm);padding:var(--sp-lg);font-size:1.4rem;flex:1;cursor:pointer;min-height:56px}
+.btnConfirm{background:var(--acc);border:1px solid var(--acc);color:#fff;border-radius:var(--sp-sm);padding:var(--sp-lg);font-size:1.4rem;flex:1;cursor:pointer;font-weight:700;min-height:56px}
 
 /* === Poker Room/Table Name === */
 .roomTableInfo{font-family:'Roboto',system-ui,sans-serif;font-size:.7rem;font-weight:600;text-align:left;background:linear-gradient(135deg,#1e2a45,#2a3556);color:#cbd5e1;padding:var(--sp-xs) var(--sp-md);border-radius:var(--sp-sm);margin-bottom:var(--sp-sm);border:1px solid #3a4a6f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
@@ -244,7 +251,7 @@ function renderTablePlayers(tableId, players) {
 
   players.forEach(p => {
     const row = document.createElement('div');
-    row.className = 'playerRow';
+    row.className = p.keyplayer ? 'playerRow keyplayer' : 'playerRow';
 
     if (p.empty) {
       row.innerHTML = `
@@ -274,7 +281,7 @@ function editChips(tableId, seatNo, currentChips, playerName) {
 
   content.innerHTML = `
     <div class="overlayTitle">${seatNo} ${playerName} 칩 수정</div>
-    <div class="muted small">현재: ${formatChips(currentChips)}</div>
+    <div class="muted" style="font-size:1.2rem;margin-bottom:var(--sp-md)">현재: ${formatChips(currentChips)}</div>
     <input type="text" id="chipInput" class="overlayInput" placeholder="예: 750000 또는 750k" autocomplete="off" inputmode="decimal">
     <div class="overlayActions">
       <button class="btnCancel" onclick="closeOverlay()">취소</button>
@@ -333,9 +340,9 @@ function addPlayerPrompt(tableId, seatNo) {
     <input type="text" id="nameInput" class="overlayInput" placeholder="이름" autocomplete="off">
     <input type="text" id="nationInput" class="overlayInput" placeholder="국가 코드 (예: KR, US, JP)" autocomplete="off" maxlength="2" style="text-transform:uppercase">
     <input type="text" id="chipsInput" class="overlayInput" placeholder="칩 (예: 280000 또는 280k)" autocomplete="off" inputmode="decimal">
-    <label style="display:flex;align-items:center;gap:var(--sp-sm);margin-bottom:var(--sp-md)">
-      <input type="checkbox" id="keyInput" style="width:20px;height:20px">
-      <span>키 플레이어로 등록</span>
+    <label style="display:flex;align-items:center;gap:var(--sp-md);margin-bottom:var(--sp-md)">
+      <input type="checkbox" id="keyInput" style="width:32px;height:32px;cursor:pointer">
+      <span style="font-size:1.4rem">키 플레이어로 등록</span>
     </label>
     <div class="overlayActions">
       <button class="btnCancel" onclick="closeOverlay()">취소</button>
