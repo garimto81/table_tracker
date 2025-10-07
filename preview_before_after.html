@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI 디자인 비교 - Before vs After</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #1a1a1a;
+  color: #fff;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 40px;
+  font-size: 32px;
+}
+
+.comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+.panel {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.panel h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  text-align: center;
+}
+
+.panel h2 .badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-left: 10px;
+}
+
+.before-badge {
+  background: #ef4444;
+}
+
+.after-badge {
+  background: #22c55e;
+}
+
+.phone-frame {
+  width: 100%;
+  max-width: 413px;
+  margin: 0 auto;
+  background: #000;
+  border-radius: 40px;
+  padding: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.phone-screen {
+  background: #0b0d12;
+  border-radius: 32px;
+  overflow: hidden;
+  height: 800px;
+  overflow-y: auto;
+}
+
+/* ========== BEFORE 스타일 ========== */
+.before-style {
+  font-size: clamp(15px, 4.8vw, 20px);
+}
+
+.before-style header {
+  padding: 6px 8px;
+  background: #0f1320;
+  border-bottom: 1px solid #222;
+}
+
+.before-style .header-text {
+  font-size: 1rem;
+}
+
+.before-style .version {
+  font-size: 0.8rem;
+  color: #9aa3b2;
+}
+
+.before-style .wrap {
+  padding: 6px;
+}
+
+.before-style .panel-title {
+  font-size: 1rem;
+  color: #a9b8ff;
+  margin-bottom: 6px;
+  padding: 0 8px;
+}
+
+.before-style .keyPlayerCard {
+  background: #101522;
+  border: 1px solid #1f2435;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 6px;
+}
+
+.before-style .roomTableInfo {
+  font-size: 12px;
+  text-align: center;
+  background: #1a1d2e;
+  color: #9aa3b2;
+  padding: 3px 6px;
+  border-radius: 3px;
+  margin-bottom: 3px;
+  border: 1px solid #2a2d3e;
+}
+
+.before-style .cardHeader {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  margin-bottom: 3px;
+}
+
+.before-style .tableLabel {
+  background: #223266;
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.before-style .playerName {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.before-style .chipRow {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.before-style .chips {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #2a6fff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.before-style .chipChange {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.before-style .chipChange.up { color: #22c55e; }
+.before-style .chipChange.down { color: #ef4444; }
+
+.before-style .manageBtn {
+  background: #0f1320;
+  color: #e7eaf0;
+  border: 1px solid #2a3249;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.8rem;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* ========== AFTER 스타일 ========== */
+.after-style {
+  font-size: clamp(18px, 8vw, 100px);
+}
+
+.after-style header {
+  padding: 16px 24px;
+  background: #0f1320;
+  border-bottom: 1px solid #2a3249;
+}
+
+.after-style .header-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.after-style .version {
+  font-size: 0.9rem;
+  color: #b4bac5;
+}
+
+.after-style .wrap {
+  padding: 16px;
+}
+
+.after-style .panel-title {
+  font-size: 1.2rem;
+  color: #a9b8ff;
+  margin-bottom: 16px;
+  padding: 0 16px;
+  font-weight: 600;
+}
+
+.after-style .keyPlayerCard {
+  background: #151822;
+  border: 1px solid #2a3249;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.after-style .roomTableInfo {
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  background: linear-gradient(135deg, #1e2a45, #2a3556);
+  color: #e7eaf0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #3a4a6f;
+}
+
+.after-style .cardHeader {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.after-style .tableLabel {
+  background: #223266;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.after-style .playerName {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.after-style .chipRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.after-style .chips {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #4d7fff;
+  cursor: pointer;
+  padding: 8px 12px;
+  margin: -8px -12px;
+  border-radius: 8px;
+}
+
+.after-style .chips:hover {
+  background: rgba(77, 127, 255, 0.1);
+}
+
+.after-style .chips::before,
+.after-style .chips::after {
+  content: '┃';
+  color: #4d7fff;
+  opacity: 0.5;
+}
+
+.after-style .chipChange {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.after-style .chipChange.up { color: #22c55e; }
+.after-style .chipChange.up::before { content: '▲ '; }
+.after-style .chipChange.down { color: #ef4444; }
+.after-style .chipChange.down::before { content: '▼ '; }
+
+.after-style .manageBtn {
+  background: #1e2435;
+  color: #e7eaf0;
+  border: 1px solid #3a4a6f;
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  width: 100%;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.after-style .manageBtn:hover {
+  background: #252d42;
+  border-color: #4d7fff;
+}
+
+/* 통계 */
+.stats {
+  background: #2a2a2a;
+  border-radius: 12px;
+  padding: 30px;
+  margin-top: 40px;
+}
+
+.stats h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  text-align: center;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.stat-item {
+  background: #3a3a3a;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.stat-item h3 {
+  font-size: 14px;
+  color: #9aa3b2;
+  margin-bottom: 10px;
+}
+
+.stat-comparison {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stat-before {
+  color: #ef4444;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.stat-after {
+  color: #22c55e;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.stat-arrow {
+  color: #22c55e;
+  font-size: 20px;
+}
+
+.stat-improvement {
+  color: #22c55e;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* 반응형 */
+@media (max-width: 900px) {
+  .comparison {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🎨 UI 디자인 비교: Before vs After</h1>
+
+  <div class="comparison">
+    <!-- BEFORE -->
+    <div class="panel">
+      <h2>현재 디자인 <span class="badge before-badge">Before</span></h2>
+      <div class="phone-frame">
+        <div class="phone-screen before-style">
+          <header>
+            <div class="header-text"><strong>🎯 Tracker</strong> <span class="version">v2.2.0</span></div>
+          </header>
+
+          <div class="wrap">
+            <div class="panel-title">Key Players (3)</div>
+
+            <!-- Card 1 -->
+            <div class="keyPlayerCard">
+              <div class="roomTableInfo">Merit Hall | Ocean Blue | T15</div>
+              <div class="cardHeader">
+                <span class="tableLabel">T15</span>
+                <span class="playerName">박프로 (S3)</span>
+                <span>🇰🇷</span>
+              </div>
+              <div class="chipRow">
+                <span class="chips">750k</span>
+                <span class="chipChange up">↑230k</span>
+              </div>
+              <button class="manageBtn">T15 관리</button>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="keyPlayerCard">
+              <div class="roomTableInfo">Merit Hall | Red Diamond | T28</div>
+              <div class="cardHeader">
+                <span class="tableLabel">T28</span>
+                <span class="playerName">김프로 (S7)</span>
+                <span>🇰🇷</span>
+              </div>
+              <div class="chipRow">
+                <span class="chips">1.2M</span>
+                <span class="chipChange down">↓180k</span>
+              </div>
+              <button class="manageBtn">T28 관리</button>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="keyPlayerCard">
+              <div class="roomTableInfo">VIP Room | Black Jack | T42</div>
+              <div class="cardHeader">
+                <span class="tableLabel">T42</span>
+                <span class="playerName">이프로 (S2)</span>
+                <span>🇯🇵</span>
+              </div>
+              <div class="chipRow">
+                <span class="chips">520k</span>
+                <span class="chipChange up">↑50k</span>
+              </div>
+              <button class="manageBtn">T42 관리</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AFTER -->
+    <div class="panel">
+      <h2>새 디자인 <span class="badge after-badge">After</span></h2>
+      <div class="phone-frame">
+        <div class="phone-screen after-style">
+          <header>
+            <div class="header-text"><strong>🎯 Tracker</strong> <span class="version">v2.2.0</span></div>
+          </header>
+
+          <div class="wrap">
+            <div class="panel-title">Key Players (3)</div>
+
+            <!-- Card 1 -->
+            <div class="keyPlayerCard">
+              <div class="roomTableInfo">Merit Hall | Ocean Blue | T15</div>
+              <div class="cardHeader">
+                <span class="tableLabel">T15</span>
+                <span class="playerName">박프로 (S3)</span>
+                <span>🇰🇷</span>
+              </div>
+              <div class="chipRow">
+                <span class="chips">750k</span>
+                <span class="chipChange up">230k</span>
+              </div>
+              <button class="manageBtn">T15 관리</button>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="keyPlayerCard">
+              <div class="roomTableInfo">Merit Hall | Red Diamond | T28</div>
+              <div class="cardHeader">
+                <span class="tableLabel">T28</span>
+                <span class="playerName">김프로 (S7)</span>
+                <span>🇰🇷</span>
+              </div>
+              <div class="chipRow">
+                <span class="chips">1.2M</span>
+                <span class="chipChange down">180k</span>
+              </div>
+              <button class="manageBtn">T28 관리</button>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="keyPlayerCard">
+              <div class="roomTableInfo">VIP Room | Black Jack | T42</div>
+              <div class="cardHeader">
+                <span class="tableLabel">T42</span>
+                <span class="playerName">이프로 (S2)</span>
+                <span>🇯🇵</span>
+              </div>
+              <div class="chipRow">
+                <span class="chips">520k</span>
+                <span class="chipChange up">50k</span>
+              </div>
+              <button class="manageBtn">T42 관리</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 통계 -->
+  <div class="stats">
+    <h2>📊 개선 효과 (Galaxy S24 기준)</h2>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <h3>Room/Table Info</h3>
+        <div class="stat-comparison">
+          <span class="stat-before">12px</span>
+          <span class="stat-arrow">→</span>
+          <span class="stat-after">33px</span>
+        </div>
+        <div class="stat-improvement">2.75배 증가 ↑</div>
+      </div>
+
+      <div class="stat-item">
+        <h3>테이블 레이블</h3>
+        <div class="stat-comparison">
+          <span class="stat-before">14px</span>
+          <span class="stat-arrow">→</span>
+          <span class="stat-after">36px</span>
+        </div>
+        <div class="stat-improvement">2.6배 증가 ↑</div>
+      </div>
+
+      <div class="stat-item">
+        <h3>플레이어 이름</h3>
+        <div class="stat-comparison">
+          <span class="stat-before">16px</span>
+          <span class="stat-arrow">→</span>
+          <span class="stat-after">36px</span>
+        </div>
+        <div class="stat-improvement">2.3배 증가 ↑</div>
+      </div>
+
+      <div class="stat-item">
+        <h3>칩 (가장 중요)</h3>
+        <div class="stat-comparison">
+          <span class="stat-before">19px</span>
+          <span class="stat-arrow">→</span>
+          <span class="stat-after">40px</span>
+        </div>
+        <div class="stat-improvement">2.1배 증가 ↑</div>
+      </div>
+
+      <div class="stat-item">
+        <h3>칩 변화량</h3>
+        <div class="stat-comparison">
+          <span class="stat-before">14px</span>
+          <span class="stat-arrow">→</span>
+          <span class="stat-after">36px</span>
+        </div>
+        <div class="stat-improvement">2.6배 증가 ↑</div>
+      </div>
+
+      <div class="stat-item">
+        <h3>버튼</h3>
+        <div class="stat-comparison">
+          <span class="stat-before">15px</span>
+          <span class="stat-arrow">→</span>
+          <span class="stat-after">36px</span>
+        </div>
+        <div class="stat-improvement">2.4배 증가 ↑</div>
+      </div>
+
+      <div class="stat-item">
+        <h3>카드 간격</h3>
+        <div class="stat-comparison">
+          <span class="stat-before">6px</span>
+          <span class="stat-arrow">→</span>
+          <span class="stat-after">16px</span>
+        </div>
+        <div class="stat-improvement">2.7배 증가 ↑</div>
+      </div>
+
+      <div class="stat-item">
+        <h3>평균 가독성</h3>
+        <div class="stat-comparison">
+          <span class="stat-before">작음</span>
+          <span class="stat-arrow">→</span>
+          <span class="stat-after">선명</span>
+        </div>
+        <div class="stat-improvement">2.5배 개선 ↑</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 실제 vw 계산 시뮬레이션
+const phoneScreens = document.querySelectorAll('.phone-screen');
+phoneScreens.forEach(screen => {
+  const width = screen.offsetWidth;
+  console.log('Phone screen width:', width);
+
+  if (screen.classList.contains('before-style')) {
+    const fontSize = Math.max(15, Math.min(width * 0.048, 20));
+    console.log('Before font-size:', fontSize);
+  } else if (screen.classList.contains('after-style')) {
+    const fontSize = Math.max(18, Math.min(width * 0.08, 100));
+    console.log('After font-size:', fontSize);
+  }
+});
+</script>
+</body>
+</html>

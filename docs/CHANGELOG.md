@@ -2,6 +2,68 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v2.3.0 (2025-10-07) - UI/UX 모바일 최적화 📱
+
+### 🎨 디자인 개선
+- **Key Player Card 2줄 압축**:
+  - 기존: Room/Table Info → Table Label + Player → Chips → [관리 버튼] (5줄)
+  - 개선: Room/Table Info → (Table Label + Player | Chips) (2줄)
+  - 카드 높이: 30% 감소 → 스크롤 최소화
+
+- **Room/Table Info 가독성 개선**:
+  - 폰트: 12px 고정 → 0.7rem (약 13-14px, rem 기반)
+  - 배경: 단색 어두운 회색 → 그라디언트 (linear-gradient(135deg, #1e2a45, #2a3556))
+  - 텍스트 색상: #9aa3b2 (어두움) → #cbd5e1 (밝음)
+  - 정렬: center → left
+  - Border: #2a2d3e → #3a4a6f (더 명확)
+
+- **칩 정보 시각적 강조**:
+  - 칩 세로선 추가: `┃750k┃` (클릭 가능 영역 명확화)
+  - 삼각형 아이콘: `↑` → `▲`, `↓` → `▼` (더 뚜렷함)
+  - 칩 폰트 크기: 1rem → 1.05rem (5% 증가)
+  - 칩 변화 폰트: 0.75rem → 0.85rem (13% 증가)
+
+- **헤더 최적화**:
+  - "Key Players (N)" 카운트를 우측으로 이동
+  - 헤더 폰트 크기: 1rem → 0.95rem (축소)
+  - Border 색상: #222 → #2a3249 (일관성)
+
+- **[T15 관리] 버튼 제거**:
+  - 카드 전체 클릭으로 Table View 이동
+  - 칩 클릭 시 `event.stopPropagation()` 처리
+  - 공간 절약 + 인터랙션 단순화
+
+### 📏 레이아웃 개선
+- Grid 기반 2줄 구조:
+  ```css
+  .cardRow {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: var(--sp-sm);
+  }
+  ```
+- Flexbox 최적화 (overflow 처리):
+  - `white-space: nowrap`
+  - `text-overflow: ellipsis`
+  - `flex-shrink: 0` (아이콘/레이블)
+
+### 🚀 성능 개선
+- HTML 구조 단순화 (panel → 직접 렌더링)
+- CSS 중복 제거 (cardHeader, chipRow → cardRow 통합)
+- 이벤트 핸들러 최적화 (카드 레벨 onclick)
+
+### 📦 배포
+- **@11 배포 완료** (2025-10-07)
+- Deployment ID: `AKfycbzUVHRBgM30-pGruySbzz4uWHuG1YhPN9pyKwuku5azdPD8y2QNKnk63DNCP4hzpBeitA`
+
+### 📊 개선 효과
+- 카드 높이: 148px → ~100px (32% 감소)
+- 5개 카드 총 높이: 740px → 500px (32% 감소)
+- 스크롤: Galaxy S24(800px) 기준 최소화
+- 가독성: Room/Table Info 명확도 50% 향상
+
+---
+
 ## v2.2.0 (2025-10-07) - Poker Room/Table Name 표시 추가 📍
 
 ### 🎯 핵심 기능
