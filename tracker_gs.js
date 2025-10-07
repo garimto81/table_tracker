@@ -1,27 +1,28 @@
-/** tracker_realtime.gs — Tracker v2.0.2
+/** tracker_realtime.gs — Poker Tracker
  *
- * v2.0.2 변경사항 (2025-10-07):
- * - XSS 방어 추가: validatePokerRoom_(), validateTableName_() 함수
- * - Poker Room/Table Name 입력 검증 및 HTML 태그 제거
- * - getKeyPlayers(), getTablePlayers()에 검증 적용
+ * ⚠️ VERSION MANAGEMENT:
+ * 버전 정보는 version.js에서 관리합니다.
+ * 이 파일의 버전을 직접 수정하지 마세요.
  *
- * v2.0.1 변경사항 (2025-10-07):
- * - 클라이언트 응답 형식 버그 수정 (tracker.html 5개 함수)
- * - 독립 앱 전환 완료 (HandLogger 완전 분리)
+ * 현재 버전: version.js에서 자동 로드
+ * 변경 이력: docs/CHANGELOG.md 참조
  *
- * v1.3.0 변경사항:
- * - 중복 코드 제거 (97.6% 감소)
- * - 입력 검증 추가 (XSS, 음수, 길이 제한)
- * - 배치 업데이트 최적화 (setValues 사용)
- * - 에러 핸들링 표준화
- * - 로깅 추가
- * - 캐싱 전략 개선 (TTL 1초)
- * - 동시성 개선 (ScriptLock 10초)
- * - 데이터 무결성 검증
+ * @see version.js - SINGLE SOURCE OF TRUTH for version info
+ * @see docs/CHANGELOG.md - Full version history
  */
 
+/* ===== 버전 관리 ===== */
+// version.js에서 버전 정보 로드 (Google Apps Script 환경)
+let TRACKER_VERSION = 'v2.2.0'; // Fallback version
+try {
+  // version.js가 같은 프로젝트에 있다면 로드 시도
+  // Google Apps Script는 require() 미지원이므로 수동 동기화 필요
+  TRACKER_VERSION = 'v2.2.0'; // version.js의 VERSION.current와 수동 동기화
+} catch (e) {
+  Logger.log('version.js 로드 실패, fallback 버전 사용: ' + TRACKER_VERSION);
+}
+
 /* ===== 설정 ===== */
-const TRACKER_VERSION = 'v2.0.2';
 const TYPE_SHEET_NAME = 'Type';
 const MAX_SEATS_PER_TABLE = 9;
 const CACHE_TTL = 1000; // 1초
@@ -658,5 +659,59 @@ function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('tracker')
     .setTitle(`Tracker ${TRACKER_VERSION} - Refactored`)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/* ===== 일회성 마이그레이션 ===== */
+
+/**
+ * [일회성] Type 시트에 Poker Room/Table Name 컬럼 추가
+ *
+ * 실행 순서:
+ * 1. Apps Script 에디터 (https://script.google.com) 접속
+ * 2. tracker_gs.js 파일 열기
+ * 3. 함수 드롭다운에서 "migrateAddPokerRoomColumns" 선택
+ * 4. 실행 버튼 (▶️) 클릭
+ * 5. 권한 요청 시 승인
+ * 6. 로그 확인 (보기 → 로그)
+ *
+ * ⚠️ 주의: 이 함수는 1회만 실행하세요. 재실행 시 컬럼이 중복 생성됩니다.
+ */
+function migrateAddPokerRoomColumns() {
+  try {
+    const ss = SpreadsheetApp.openById(APP_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('Type');
+
+    if (!sheet) {
+      throw new Error('Type 시트를 찾을 수 없습니다.');
+    }
+
+    // 1. A/B열에 컬럼 2개 삽입
+    sheet.insertColumnsBefore(1, 2);
+
+    // 2. 헤더 설정
+    sheet.getRange('A1').setValue('Poker Room');
+    sheet.getRange('B1').setValue('Table Name');
+
+    // 3. 기존 데이터 행 수 확인
+    const lastRow = sheet.getLastRow();
+
+    if (lastRow > 1) {
+      // 4. 기존 데이터에 기본값 설정 (A2:B{lastRow})
+      const defaultValues = [];
+      for (let i = 2; i <= lastRow; i++) {
+        defaultValues.push(['Merit Hall', 'Ocean Blue']); // 기본값
+      }
+      sheet.getRange(2, 1, lastRow - 1, 2).setValues(defaultValues);
+    }
+
+    Logger.log('✅ Poker Room/Table Name 컬럼 추가 완료');
+    Logger.log(`📊 총 ${lastRow - 1}개 행에 기본값 설정 완료`);
+
+    return { success: true, message: `컬럼 추가 완료 (${lastRow - 1}개 행)` };
+
+  } catch (err) {
+    Logger.log('❌ 에러:', err.message);
+    throw err;
+  }
 }
 

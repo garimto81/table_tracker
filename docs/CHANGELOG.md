@@ -1,5 +1,49 @@
 # CHANGELOG - Poker Tracker
 
+> **변경 이력** | 현재 버전: [version.js](../version.js) 참조
+
+## v2.2.0 (2025-10-07) - Poker Room/Table Name 표시 추가 📍
+
+### 🎯 핵심 기능
+- **Poker Room/Table Name 표시**:
+  - Type 시트 A/B열 추가 (Poker Room, Table Name)
+  - Key Player Card: "Merit Hall | Ocean Blue | T1" 표시
+  - Table View 헤더: "Merit Hall | Ocean Blue | T1" 표시
+  - CSS: Roboto 12px, 중앙 정렬, 말줄임(...) 처리
+
+### 🔒 보안 강화
+- **XSS 방어 함수 추가**:
+  - `validatePokerRoom_(room)` - HTML 태그 제거 + 50자 제한
+  - `validateTableName_(name)` - HTML 태그 제거 + 50자 제한
+  - 정규식: `/<[^>]*>/g`
+
+### 📦 마이그레이션
+- **migrateAddPokerRoomColumns()** 함수 추가:
+  - Type 시트 A/B열 자동 삽입
+  - 기존 데이터에 기본값 설정 (Merit Hall, Ocean Blue)
+  - 일회성 실행 (Apps Script Editor)
+
+### 🧠 코드 품질
+- **formatRoomTableInfo()** 헬퍼 함수 추가 (중복 제거)
+- 폰트 크기 개선: 11px → 12px (모바일 가독성)
+- 오버플로 처리: text-overflow:ellipsis
+
+### 📝 버전 관리
+- **version.js** 생성: SINGLE SOURCE OF TRUTH
+  - 모든 버전 정보를 1곳에서 관리
+  - 배포 정보, 파일별 버전, 상태, 다음 계획 통합
+  - Google Apps Script + Browser 양방향 export
+
+### 📦 배포
+- **@8 배포 완료** (2025-10-07)
+- Deployment ID: `AKfycbzUVHRBgM30-pGruySbzz4uWHuG1YhPN9pyKwuku5azdPD8y2QNKnk63DNCP4hzpBeitA`
+
+### ⚠️ 주의사항
+- migrateAddPokerRoomColumns() 실행 필요 (Apps Script Editor)
+- 웹앱 테스트 필요 (Poker Room/Table Name 표시 확인)
+
+---
+
 ## v2.0.2 (2025-10-07) - XSS 방어 강화 🔒
 
 ### 🔒 보안 강화

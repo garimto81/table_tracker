@@ -1,7 +1,9 @@
-# STATUS - Poker Tracker v2.2.0
+# STATUS - Poker Tracker
+
+> **현재 상태** | 버전: [version.js](../version.js) 참조
 
 ## 📌 현재 위치
-**버전**: v2.2.0 (2025-10-07)
+**버전**: v2.2.0 (2025-10-07) - [version.js](../version.js)에서 관리
 **현재 상태**: 🟡 **테스트 필요** - Phase 1.5 코드 작업 완료, 마이그레이션 + 테스트 대기
 
 ---
