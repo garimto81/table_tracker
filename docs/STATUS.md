@@ -10,43 +10,25 @@
 
 ## ⚠️ 블로커 (Critical)
 
-### 1. A/B열 자동 입력 미작동 🔴
-**상태**: 디버깅 필요
-**증상**: 신규 플레이어 추가 시 A/B열에 빈값 들어감
-**원인 추정**:
-- 조건문 오류 (`!== -1` vs `>= 0`)
-- Type 시트 헤더 불일치
-- 배포 미반영
-**해결 방안**: [BUGFIX_v2.2.0_Phase1.5.md](BUGFIX_v2.2.0_Phase1.5.md#3-ab열-자동-입력-미작동-) 참조
-
-### 2. 중앙정렬 미적용 🟡
-**상태**: 확인 필요
-**증상**: Poker Room/Table Name이 좌측 정렬로 표시
-**원인 추정**: 브라우저 캐시 또는 CSS 우선순위
-**해결 방안**: [BUGFIX_v2.2.0_Phase1.5.md](BUGFIX_v2.2.0_Phase1.5.md#1-중앙정렬-미적용-) 참조
-
-### 3. 시트 정렬 미적용 🟡
-**상태**: 요구사항 재확인 필요
-**증상**: Type 시트 행 추가 시 내림차순 정렬 안 됨
-**원인**: appendRow() 후 sort() 미구현
-**해결 방안**: [BUGFIX_v2.2.0_Phase1.5.md](BUGFIX_v2.2.0_Phase1.5.md#2-시트-정렬-미적용-) 참조
+없음 - 모든 이슈 해결 완료 ✅
 
 ---
 
 ## ✅ 최근 완료 (최신 3개)
 
-### 1. v2.2.0 - Poker Room/Table Name 표시 추가 (코드 작업 완료)
+### 1. v2.2.0 - Poker Room/Table Name 표시 추가 ✅ 완료
 **날짜**: 2025-10-07
 **변경사항**:
 - ✅ Type 시트 A/B열 구조 설계 완료
 - ✅ tracker_gs.js: getKeyPlayers()/getTablePlayers() A/B열 읽기 추가
+- ✅ tracker_gs.js: addPlayer() A/B열 기본값 자동 입력
+- ✅ tracker_gs.js: addPlayer() 후 자동 정렬 (Poker Room → Table Name → Table No. → Seat No.)
 - ✅ tracker.html: Key Player Card + Table View 헤더에 Poker Room/Table Name 표시
-- ✅ CSS: .roomTableInfo 스타일 추가 (Roboto 12px, 중앙 정렬)
-- ✅ 마이그레이션 함수 추가 (migrateAddPokerRoomColumns)
+- ✅ CSS: .roomTableInfo 중앙 정렬 강제 (!important)
 - ✅ XSS 방어 강화 (validatePokerRoom_, validateTableName_)
 - ✅ 코드 품질 개선 (formatRoomTableInfo 헬퍼 함수, 중복 제거)
-- ✅ 배포 완료 (@8)
-- ⚠️ 마이그레이션 실행 + 테스트 대기
+- ✅ 배포 완료 (@10)
+- ✅ 테스트 완료 (A/B열 자동 입력, 중앙 정렬, 자동 정렬)
 
 ### 2. v2.1.0 - Nationality 입력 UX 개선
 **날짜**: 2025-10-07
@@ -68,16 +50,7 @@
 
 ## 🚧 진행 중
 
-### Phase 1.5 - Poker Room/Table Name 표시 (70% 완료)
-- ✅ 문서 작업 완료 (PLAN, PRD, LLD 업데이트)
-- ✅ 코드 작업 완료 (tracker_gs.js, tracker.html 수정)
-- ✅ 신규 플레이어 등록 로직 추가 (addPlayer A/B열 기본값)
-- ✅ 배포 완료 (@9)
-- ❌ **테스트 실패** - 3가지 버그 발견
-  - 🔴 A/B열 자동 입력 미작동 (Critical)
-  - 🟡 중앙정렬 미적용 (High)
-  - 🟡 시트 정렬 미적용 (Medium)
-- ⏳ 버그 수정 대기 (디버깅 + 수정 + 재배포)
+없음 - Phase 1.5 완료
 
 ---
 

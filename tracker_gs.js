@@ -468,6 +468,18 @@ function addPlayer(tableId, seatNo, name, nation, chips, isKey) {
 
       sh.appendRow(row);
 
+      // 자동 정렬: Poker Room → Table Name → Table No. → Seat No. 순서
+      const lastRow = sh.getLastRow();
+      if (lastRow > 1) {
+        const sortRange = sh.getRange(2, 1, lastRow - 1, sh.getLastColumn());
+        sortRange.sort([
+          {column: 1, ascending: true},  // A열: Poker Room
+          {column: 2, ascending: true},  // B열: Table Name
+          {column: 3, ascending: true},  // C열: Table No.
+          {column: 4, ascending: true}   // D열: Seat No.
+        ]);
+      }
+
       invalidateCache_();
 
       log_(LOG_LEVEL.INFO, 'addPlayer', '플레이어 추가 완료');
