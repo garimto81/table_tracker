@@ -17,11 +17,12 @@
   - `validateTableName_(name)` - HTML 태그 제거 + 50자 제한
   - 정규식: `/<[^>]*>/g`
 
-### 📦 마이그레이션
-- **migrateAddPokerRoomColumns()** 함수 추가:
-  - Type 시트 A/B열 자동 삽입
-  - 기존 데이터에 기본값 설정 (Merit Hall, Ocean Blue)
-  - 일회성 실행 (Apps Script Editor)
+### 🎯 신규 플레이어 등록 로직
+- **addPlayer()** 함수 수정:
+  - A/B열(Poker Room, Table Name) 기본값 자동 입력
+  - Poker Room: "Merit Hall" (기본값)
+  - Table Name: "Ocean Blue" (기본값)
+  - Type 시트에서 수동 변경 가능
 
 ### 🧠 코드 품질
 - **formatRoomTableInfo()** 헬퍼 함수 추가 (중복 제거)
@@ -38,9 +39,9 @@
 - **@8 배포 완료** (2025-10-07)
 - Deployment ID: `AKfycbzUVHRBgM30-pGruySbzz4uWHuG1YhPN9pyKwuku5azdPD8y2QNKnk63DNCP4hzpBeitA`
 
-### ⚠️ 주의사항
-- migrateAddPokerRoomColumns() 실행 필요 (Apps Script Editor)
-- 웹앱 테스트 필요 (Poker Room/Table Name 표시 확인)
+### ✅ 배포 상태
+- @9 배포 예정 (신규 플레이어 등록 로직 추가)
+- 웹앱 테스트 필요 (신규 플레이어 추가 시 A/B열 기본값 확인)
 
 ---
 

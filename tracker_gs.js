@@ -455,6 +455,10 @@ function addPlayer(tableId, seatNo, name, nation, chips, isKey) {
       }
 
       const row = new Array(data.header.length).fill('');
+      // A/B열: Poker Room/Table Name 기본값 설정
+      if (cols.pokerRoom !== -1) row[cols.pokerRoom] = 'Merit Hall';
+      if (cols.tableName !== -1) row[cols.tableName] = 'Ocean Blue';
+      // 기존 컬럼
       row[cols.table] = validTableId;
       row[cols.seat] = normalizeSeatRaw_(validSeatNo);
       if (cols.player !== -1) row[cols.player] = validName;

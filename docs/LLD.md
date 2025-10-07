@@ -84,10 +84,15 @@ Tracker (완전 독립 웹앱)
 - **장점**:
   - 물리적 위치 명확화 (T1만으로는 위치 파악 어려움)
   - 방송팀/스태프가 즉시 테이블 위치 확인 가능
-  - UI 가독성 향상 (Roboto 11px, 중앙 정렬)
+  - UI 가독성 향상 (Roboto 12px, 중앙 정렬)
+- **신규 플레이어 등록 로직**:
+  - addPlayer() 함수에서 A/B열 기본값 자동 입력
+  - Poker Room: "Merit Hall" (기본값)
+  - Table Name: "Ocean Blue" (기본값)
+  - 사용자가 Type 시트에서 수동으로 변경 가능
 - **트레이드오프**:
-  - Type 시트 컬럼 2개 추가 (A/B열)
-  - 서버 함수 수정 필요 (A/B열 읽기)
+  - Type 시트 컬럼 2개 사용 (A/B열)
+  - 서버 함수 수정 필요 (A/B열 읽기/쓰기)
   - UI 수정 필요 (Poker Room/Table Name 표시)
 
 ---
@@ -427,8 +432,18 @@ function addPlayer(tableId, seatNo, name, nation, chips, isKey) {
     );
     if (exists) throw new Error(`${tableId} ${seatNo} 이미 존재`);
 
-    // 추가
-    sh.appendRow([tableId, seatNo, name, nation, chips, isKey]);
+    // 추가 (A/B열 기본값 포함)
+    const row = [];
+    row[cols.pokerRoom] = 'Merit Hall';  // A열 기본값
+    row[cols.tableName] = 'Ocean Blue';  // B열 기본값
+    row[cols.table] = tableId;
+    row[cols.seat] = seatNo;
+    row[cols.player] = name;
+    row[cols.nation] = nation;
+    row[cols.chips] = chips;
+    row[cols.key] = isKey;
+
+    sh.appendRow(row);
     return { success: true };
   });
 }

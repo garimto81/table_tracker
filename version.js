@@ -10,12 +10,12 @@ const VERSION = {
     'Type 시트 A/B열 추가 (Poker Room, Table Name)',
     'UI에 Poker Room/Table Name 표시 (Key Player Card + Table View)',
     'XSS 방어 강화 (validatePokerRoom_, validateTableName_)',
-    '마이그레이션 함수 추가 (migrateAddPokerRoomColumns)',
+    '신규 플레이어 등록 시 A/B열 기본값 자동 입력 (addPlayer 수정)',
     '코드 품질 개선 (중복 제거, 모바일 가독성)'
   ],
   deployment: {
-    id: '@8',
-    description: 'v2.2.0 - Poker Room/Table Name display (final)',
+    id: '@9',
+    description: 'v2.2.0 - Poker Room/Table Name display + addPlayer default values',
     url: 'https://script.google.com/macros/s/AKfycbzUVHRBgM30-pGruySbzz4uWHuG1YhPN9pyKwuku5azdPD8y2QNKnk63DNCP4hzpBeitA/exec',
     scriptId: '17reWlyDY3W3aBsK9VYTnJ1C3iXnWhmzxOHJ-_s54S9QYje3COrwId38O',
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
@@ -30,12 +30,9 @@ const VERSION = {
     'docs/PLAN.md': 'v2.2.0'
   },
   status: {
-    state: '🟡 테스트 필요',
-    phase: 'Phase 1.5 (30% 완료)',
-    blockers: [
-      '⚠️ migrateAddPokerRoomColumns() 함수 실행 필요 (Apps Script Editor)',
-      '⚠️ 웹앱 테스트 필요 (Poker Room/Table Name 표시 확인)'
-    ],
+    state: '🟡 배포 대기',
+    phase: 'Phase 1.5 (95% 완료)',
+    blockers: [],
     lastCompleted: [
       '✅ XSS 방어 강화 (v2.0.2)',
       '✅ Nationality 입력 UX 개선 (v2.1.0)',

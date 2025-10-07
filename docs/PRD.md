@@ -58,14 +58,14 @@
 - **상태**: ✅ 완료 (v2.0.1)
 - **의존성**: 1.3 (코어 기능)
 
-### 1.5 Poker Room/Table Name 표시 추가 🔴 High
+### 1.5 Poker Room/Table Name 표시 추가 ✅ 완료
 - **근거**: PLAN 시나리오 1 (테이블 위치 상세 정보 제공)
 - **성공**: Type 시트 A/B열 데이터가 UI에 표시됨
 - **배경**:
   - 포커 대회장에는 여러 룸(Merit Hall, VIP Room 등)과 테이블(Ocean Blue, Red Diamond 등)이 있음
   - 테이블 번호(T1, T2)만으로는 물리적 위치 파악 어려움
   - Poker Room + Table Name + Table No. 조합으로 정확한 위치 제공
-- **Type 시트 구조 변경**:
+- **Type 시트 구조**:
   ```
   A열: Poker Room (예: Merit Hall)
   B열: Table Name (예: Ocean Blue)
@@ -77,20 +77,26 @@
   H열: Keyplayer (기존)
   ```
 - **UI 표시**:
-  - Key Player Card 상단: "Merit Hall | Ocean Blue | T1" (Roboto 11px, 중앙 정렬)
-  - Table View 헤더: "Merit Hall | Ocean Blue | T1" (Roboto 11px, 중앙 정렬)
+  - Key Player Card 상단: "Merit Hall | Ocean Blue | T1" (Roboto 12px, 중앙 정렬)
+  - Table View 헤더: "Merit Hall | Ocean Blue | T1" (Roboto 12px, 중앙 정렬)
   - 기존 UI 레이아웃 유지 (추가만)
-- **체크리스트**:
-  - [ ] Type 시트 A/B열 추가 (Poker Room, Table Name)
-  - [ ] tracker_gs.js: getKeyPlayers() A/B열 데이터 포함
-  - [ ] tracker_gs.js: getTablePlayers() A/B열 데이터 포함
-  - [ ] tracker.html: Key Player Card에 Poker Room/Table Name 표시
-  - [ ] tracker.html: Table View 헤더에 Poker Room/Table Name 표시
-  - [ ] CSS: Roboto 11px, 중앙 정렬 스타일 추가
-  - [ ] 배포 (clasp push + clasp deploy @7)
-  - [ ] 테스트 (Poker Room/Table Name 표시 확인)
-- **예상**: 2시간
-- **상태**: 🚧 진행 중
+- **신규 플레이어 등록 로직**:
+  - addPlayer() 함수에서 A/B열 기본값 자동 입력
+  - Poker Room: "Merit Hall" (기본값)
+  - Table Name: "Ocean Blue" (기본값)
+  - 사용자가 Type 시트에서 수동으로 변경 가능
+- **완료 내역**:
+  - [x] Type 시트 A/B열 (이미 존재)
+  - [x] tracker_gs.js: getKeyPlayers() A/B열 데이터 포함
+  - [x] tracker_gs.js: getTablePlayers() A/B열 데이터 포함
+  - [x] tracker_gs.js: addPlayer() A/B열 기본값 자동 입력
+  - [x] tracker.html: Key Player Card에 Poker Room/Table Name 표시
+  - [x] tracker.html: Table View 헤더에 Poker Room/Table Name 표시
+  - [x] CSS: Roboto 12px, 중앙 정렬 스타일 추가
+  - [x] XSS 방어 강화 (validatePokerRoom_, validateTableName_)
+  - [x] 코드 품질 개선 (formatRoomTableInfo 헬퍼 함수)
+  - [x] 배포 (clasp push + clasp deploy @8)
+- **상태**: ✅ 완료
 - **의존성**: 1.4 (응답 형식 버그 수정)
 
 ---

@@ -10,21 +10,7 @@
 
 ## ⚠️ 블로커 (Critical)
 
-### 1. migrateAddPokerRoomColumns() 함수 실행 필요
-**상태**: 🟡 사용자 실행 대기
-**내용**: Type 시트 A/B열 추가 (Poker Room, Table Name)
-**실행 방법**:
-1. Apps Script Editor: https://script.google.com/home/projects/17reWlyDY3W3aBsK9VYTnJ1C3iXnWhmzxOHJ-_s54S9QYje3COrwId38O
-2. 함수 드롭다운: `migrateAddPokerRoomColumns` 선택
-3. 실행 버튼(▶️) 클릭
-4. 로그 확인: "✅ Poker Room/Table Name 컬럼 추가 완료"
-
-### 2. 웹앱 테스트 필요
-**상태**: 🟡 마이그레이션 후 테스트 대기
-**확인 사항**:
-- ✅ Key Player Card: "Merit Hall | Ocean Blue | T1" 표시
-- ✅ Table View 헤더: "Merit Hall | Ocean Blue | T1" 표시
-- ✅ Roboto 12px, 중앙 정렬, 말줄임(...) 처리
+없음 - 배포 대기 중
 
 ---
 
@@ -63,12 +49,13 @@
 
 ## 🚧 진행 중
 
-### Phase 1.5 - Poker Room/Table Name 표시 (30% 완료)
+### Phase 1.5 - Poker Room/Table Name 표시 (95% 완료)
 - ✅ 문서 작업 완료 (PLAN, PRD, LLD 업데이트)
 - ✅ 코드 작업 완료 (tracker_gs.js, tracker.html 수정)
-- ✅ 배포 완료 (@8)
-- ⏳ 마이그레이션 실행 대기 (migrateAddPokerRoomColumns)
-- ⏳ 웹앱 테스트 대기 (Poker Room/Table Name 표시 확인)
+- ✅ 신규 플레이어 등록 로직 추가 (addPlayer A/B열 기본값)
+- ✅ 배포 준비 완료 (clasp push @9)
+- ⏳ 웹앱 배포 대기 (clasp deploy)
+- ⏳ 테스트 대기 (신규 플레이어 추가 시 A/B열 확인)
 
 ---
 
