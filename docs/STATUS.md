@@ -1,27 +1,45 @@
-# STATUS - Poker Tracker v2.0.2
+# STATUS - Poker Tracker v2.2.0
 
 ## 📌 현재 위치
-**버전**: v2.0.2 (2025-10-07)
-**현재 상태**: 🟢 **안정** - XSS 방어 강화 완료
+**버전**: v2.2.0 (2025-10-07)
+**현재 상태**: 🟡 **테스트 필요** - Phase 1.5 코드 작업 완료, 마이그레이션 + 테스트 대기
 
 ---
 
 ## ⚠️ 블로커 (Critical)
 
-없음 - 모든 블로커 해결 완료
+### 1. migrateAddPokerRoomColumns() 함수 실행 필요
+**상태**: 🟡 사용자 실행 대기
+**내용**: Type 시트 A/B열 추가 (Poker Room, Table Name)
+**실행 방법**:
+1. Apps Script Editor: https://script.google.com/home/projects/17reWlyDY3W3aBsK9VYTnJ1C3iXnWhmzxOHJ-_s54S9QYje3COrwId38O
+2. 함수 드롭다운: `migrateAddPokerRoomColumns` 선택
+3. 실행 버튼(▶️) 클릭
+4. 로그 확인: "✅ Poker Room/Table Name 컬럼 추가 완료"
+
+### 2. 웹앱 테스트 필요
+**상태**: 🟡 마이그레이션 후 테스트 대기
+**확인 사항**:
+- ✅ Key Player Card: "Merit Hall | Ocean Blue | T1" 표시
+- ✅ Table View 헤더: "Merit Hall | Ocean Blue | T1" 표시
+- ✅ Roboto 12px, 중앙 정렬, 말줄임(...) 처리
 
 ---
 
 ## ✅ 최근 완료 (최신 3개)
 
-### 1. v2.0.2 - XSS 방어 강화
+### 1. v2.2.0 - Poker Room/Table Name 표시 추가 (코드 작업 완료)
 **날짜**: 2025-10-07
 **변경사항**:
-- ✅ validatePokerRoom_(), validateTableName_() 함수 추가
-- ✅ getKeyPlayers(), getTablePlayers()에 검증 적용
-- ✅ HTML 태그 제거로 XSS 방어 (정규식 `/<[^>]*>/g`)
-- ✅ 최대 길이 50자 제한
-- ✅ code-reviewer 피드백 반영
+- ✅ Type 시트 A/B열 구조 설계 완료
+- ✅ tracker_gs.js: getKeyPlayers()/getTablePlayers() A/B열 읽기 추가
+- ✅ tracker.html: Key Player Card + Table View 헤더에 Poker Room/Table Name 표시
+- ✅ CSS: .roomTableInfo 스타일 추가 (Roboto 12px, 중앙 정렬)
+- ✅ 마이그레이션 함수 추가 (migrateAddPokerRoomColumns)
+- ✅ XSS 방어 강화 (validatePokerRoom_, validateTableName_)
+- ✅ 코드 품질 개선 (formatRoomTableInfo 헬퍼 함수, 중복 제거)
+- ✅ 배포 완료 (@8)
+- ⚠️ 마이그레이션 실행 + 테스트 대기
 
 ### 2. v2.1.0 - Nationality 입력 UX 개선
 **날짜**: 2025-10-07
@@ -30,7 +48,6 @@
 - ✅ 자동 대문자 변환 + 2자 제약
 - ✅ 입력 검증 추가 (빈 값 체크)
 - ✅ 배포 완료 (@6)
-- ✅ PRD Phase 1.4 완료 처리
 
 ### 3. v2.0.1 - 응답 형식 버그 수정
 **날짜**: 2025-10-07
@@ -39,29 +56,33 @@
 - ✅ tracker.html 5개 함수 응답 처리 수정
 - ✅ 에러 핸들링 추가 (response.success 체크)
 - ✅ 배포 완료 (@5)
-- ✅ 전체 기능 테스트 통과
 
 ---
 
 ## 🚧 진행 중
 
-없음 - 다음 Phase 대기 중
+### Phase 1.5 - Poker Room/Table Name 표시 (30% 완료)
+- ✅ 문서 작업 완료 (PLAN, PRD, LLD 업데이트)
+- ✅ 코드 작업 완료 (tracker_gs.js, tracker.html 수정)
+- ✅ 배포 완료 (@8)
+- ⏳ 마이그레이션 실행 대기 (migrateAddPokerRoomColumns)
+- ⏳ 웹앱 테스트 대기 (Poker Room/Table Name 표시 확인)
 
 ---
 
 ## 📝 AI 메모리
 
 ### 마지막 작업
-- XSS 방어 함수 추가 (validatePokerRoom_, validateTableName_)
-- getKeyPlayers(), getTablePlayers()에 검증 적용
-- tracker_gs.js v2.0.1 → v2.0.2 업데이트
-- CHANGELOG.md v2.0.2 엔트리 추가
-- STATUS 버전 업데이트 (v2.2.0 → v2.0.2)
+- **version.js 생성**: SINGLE SOURCE OF TRUTH 버전 관리 시스템 구축
+- **STATUS.md 동기화**: v2.0.2 → v2.2.0 업데이트
+- **Phase 1.5 코드 작업 완료**: Poker Room/Table Name 표시 기능 구현
+- **배포**: @8 완료 (v2.2.0 - Poker Room/Table Name display final)
 
 ### 다음 할 일
-1. **배포**: clasp push (tracker_gs.js 업데이트)
-2. **테스트**: XSS 방어 검증 (Poker Room/Table Name에 HTML 태그 입력)
-3. **다음 Phase**: Poker Room/Table Name 표시 추가 (v2.2.0)
+1. **마이그레이션**: migrateAddPokerRoomColumns() 실행 (Apps Script Editor)
+2. **테스트**: 웹앱에서 Poker Room/Table Name 표시 확인
+3. **문서 갱신**: 테스트 완료 후 STATUS.md 블로커 제거, Phase 1.5 완료 처리
+4. **다음 Phase**: v2.3.0 - 키 플레이어 테이블 이동 기능 (Phase 2.1)
 
 ### 프로젝트 구조
 - **Frontend**: [tracker.html](../tracker.html) (v1.5, 461줄)
@@ -71,10 +92,10 @@
 
 ### 배포 정보
 - **Script ID**: `17reWlyDY3W3aBsK9VYTnJ1C3iXnWhmzxOHJ-_s54S9QYje3COrwId38O`
-- **최신 배포**: @6 (v2.1.0 - Nationality input method changed)
+- **최신 배포**: @8 (v2.2.0 - Poker Room/Table Name display final)
 - **Deployment ID**: `AKfycbzUVHRBgM30-pGruySbzz4uWHuG1YhPN9pyKwuku5azdPD8y2QNKnk63DNCP4hzpBeitA`
 - **웹앱 URL**: `https://script.google.com/macros/s/AKfycbzUVHRBgM30-pGruySbzz4uWHuG1YhPN9pyKwuku5azdPD8y2QNKnk63DNCP4hzpBeitA/exec`
-- **상태**: 🟢 정상 운영 (Phase 1 완료, 모든 테스트 통과)
+- **상태**: 🟡 테스트 필요 (Phase 1.5 코드 완료, 마이그레이션 대기)
 
 ### 핵심 기능
 1. **Key Player View**: 키 플레이어 목록 + 칩 변화량
