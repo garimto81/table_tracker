@@ -2,6 +2,31 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.0.1 (2025-10-12) - Keyplayer 컬럼 인덱스 고정 🐛
+
+### 🔧 버그 수정
+- **문제**: Keyplayer 컬럼 헤더 이름이 없거나 다를 경우 키 플레이어 필터링 실패
+- **해결**: K열(인덱스 10)을 헤더 무관하게 고정 (`cols.keyplayer = 10`)
+- **영향**: getKeyPlayers(), getTablePlayers(), addPlayer() 모두 정상 작동
+
+### 📊 로직 개선
+- **getKeyPlayers()**:
+  - `cols.keyplayer !== -1` 조건 제거 (항상 인덱스 10)
+  - `p.tableNo && p.seatNo` → `p.tableNo > 0 && p.seatNo > 0` (falsy 방지)
+- **getTablePlayers()**:
+  - `cols.keyplayer !== -1` 조건 제거
+- **addPlayer()**:
+  - `if (cols.keyplayer !== -1)` 조건 제거 (K열 항상 존재)
+
+### 📝 주석 추가
+- "K열 고정 (헤더 이름 무관)" 주석 추가
+- "K열(인덱스 10) 값 확인" 주석 추가
+
+### 🎯 목적
+Seats.csv 구조에서 Keyplayer는 항상 K열(11번째 컬럼, 인덱스 10)에 위치하므로, 헤더 이름 검색 없이 인덱스로 직접 접근하여 안정성 향상.
+
+---
+
 ## v3.0.0 (2025-10-12) - Seats.csv 구조 마이그레이션 🗄️
 
 ### 🔄 DB 구조 변경 (8 컬럼 → 11 컬럼)

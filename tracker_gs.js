@@ -204,6 +204,7 @@ function getSheetData_(forceRefresh = false) {
   const data = readAll_Optimized_(sh);
 
   // Seats.csv 기반 구조 (11개 컬럼)
+  // K열 Keyplayer는 헤더 무관하게 인덱스 10으로 고정
   const cols = {
     pokerRoom: findColIndex_(data.header, ['PokerRoom', 'Poker Room', 'poker_room']),
     tableName: findColIndex_(data.header, ['TableName', 'Table Name', 'table_name']),
@@ -215,7 +216,7 @@ function getSheetData_(forceRefresh = false) {
     playerName: findColIndex_(data.header, ['PlayerName', 'Player Name', 'Players', 'Player', 'Name']),
     nationality: findColIndex_(data.header, ['Nationality', 'Nation', 'Country']),
     chipCount: findColIndex_(data.header, ['ChipCount', 'Chips', 'Stack', 'Starting Chips']),
-    keyplayer: findColIndex_(data.header, ['Keyplayer', 'Key Player', 'KeyPlayer', 'key_player'])
+    keyplayer: 10  // K열 고정 (헤더 이름 무관)
   };
 
   if (cols.tableNo === -1 || cols.seatNo === -1 || cols.playerName === -1) {
@@ -317,10 +318,9 @@ function getKeyPlayers() {
 
     const players = data.rows
       .filter(row => {
-        const isKey = cols.keyplayer !== -1 && (
-          row[cols.keyplayer] === true ||
-          String(row[cols.keyplayer]).toUpperCase() === 'TRUE'
-        );
+        // K열(인덱스 10) 값 확인
+        const isKey = row[cols.keyplayer] === true ||
+          String(row[cols.keyplayer]).toUpperCase() === 'TRUE';
         return isKey;
       })
       .map(row => {
@@ -337,7 +337,7 @@ function getKeyPlayers() {
           chipCount: cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0
         };
       })
-      .filter(p => p.tableNo && p.seatNo && p.playerName);
+      .filter(p => p.tableNo > 0 && p.seatNo > 0 && p.playerName);
 
     log_(LOG_LEVEL.INFO, 'getKeyPlayers', '키 플레이어 조회 완료', { count: players.length });
 
@@ -369,10 +369,9 @@ function getTablePlayers(tableId) {
       const playerName = String(row[cols.playerName] || '').trim();
       const nationality = cols.nationality !== -1 ? String(row[cols.nationality] || '').trim() : '';
       const chipCount = cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0;
-      const keyplayer = cols.keyplayer !== -1 && (
-        row[cols.keyplayer] === true ||
-        String(row[cols.keyplayer]).toUpperCase() === 'TRUE'
-      );
+      // K열(인덱스 10) 값 확인
+      const keyplayer = row[cols.keyplayer] === true ||
+        String(row[cols.keyplayer]).toUpperCase() === 'TRUE';
 
       if (seatNum > 0 && playerName) {
         const pokerRoom = cols.pokerRoom !== -1 ? validatePokerRoom_(row[cols.pokerRoom]) : '';
@@ -476,7 +475,7 @@ function addPlayer(tableId, seatNo, name, nation, chips, isKey) {
       if (cols.playerName !== -1) row[cols.playerName] = validName;
       if (cols.nationality !== -1) row[cols.nationality] = nation || '';
       if (cols.chipCount !== -1) row[cols.chipCount] = validChips;
-      if (cols.keyplayer !== -1) row[cols.keyplayer] = Boolean(isKey);
+      row[cols.keyplayer] = Boolean(isKey);  // K열 고정 (항상 존재)
 
       sh.appendRow(row);
 

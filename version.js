@@ -2,17 +2,14 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.0.0',
-  name: 'Seats.csv Structure Migration',
+  current: 'v3.0.1',
+  name: 'Keyplayer Column Fixed Index',
   date: '2025-10-12',
   phase: '3.0',
   changes: [
-    'Seats.csv 기반 DB 구조로 완전 전환 (8 컬럼 → 11 컬럼)',
-    'TableNo/SeatNo 숫자형 변환 ("T15" → 15)',
-    'TableId, SeatId, PlayerId 내부 ID 추가',
-    'PlayerName, Nationality, ChipCount 컬럼명 표준화',
-    '모든 CRUD 작업 숫자형 비교로 전환',
-    'UI 헬퍼 함수 추가 (formatTableNo, parseSeatNo 등)'
+    'K열 Keyplayer 인덱스 고정 (헤더 무관, 인덱스 10)',
+    '키 플레이어 필터링 로직 개선 (헤더 이름 의존성 제거)',
+    'tableNo/seatNo > 0 조건으로 필터링 수정 (falsy 방지)'
   ],
   deployment: {
     id: '@12',
@@ -22,10 +19,10 @@ const VERSION = {
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
   },
   files: {
-    'tracker_gs.js': 'v3.0.0',
+    'tracker_gs.js': 'v3.0.1',
     'tracker.html': 'v3.0.0',
     'docs/STATUS.md': 'v3.0.0',
-    'docs/CHANGELOG.md': 'v3.0.0',
+    'docs/CHANGELOG.md': 'v3.0.1',
     'docs/PRD.md': 'v2.4.0',
     'docs/LLD.md': 'v2.4.0',
     'docs/PLAN.md': 'v2.4.0',
@@ -33,21 +30,20 @@ const VERSION = {
   },
   status: {
     state: '✅ 배포 준비 완료',
-    phase: 'Phase 3.0 (100% 완료)',
+    phase: 'Phase 3.0.1 (100% 완료)',
     blockers: [
-      '⚠️ 테스트 필요 (getKeyPlayers, getTablePlayers, addPlayer)',
-      '⚠️ 웹앱 배포 후 UI 검증 필요'
+      '⚠️ 웹앱 배포 후 키 플레이어 표시 확인 필요'
     ],
     lastCompleted: [
+      '✅ Keyplayer 컬럼 인덱스 고정 (v3.0.1)',
       '✅ Seats.csv 구조 마이그레이션 (v3.0.0)',
-      '✅ 모바일 텍스트 크기 최적화 (v2.4.0)',
-      '✅ UI/UX 모바일 최적화 (v2.3.0)'
+      '✅ 모바일 텍스트 크기 최적화 (v2.4.0)'
     ]
   },
   next: {
-    version: 'v3.0.1',
-    phase: '3.0',
-    target: '배포 후 버그 수정 및 안정화',
+    version: 'v3.1.0',
+    phase: '3.1',
+    target: '플레이어 사진 기능 추가 (L열 PlayerPhoto)',
     estimatedDate: '2025-10-13'
   }
 };
