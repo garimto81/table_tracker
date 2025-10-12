@@ -2,6 +2,69 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.0.0 (2025-10-12) - Seats.csv 구조 마이그레이션 🗄️
+
+### 🔄 DB 구조 변경 (8 컬럼 → 11 컬럼)
+- **기존**: Poker Room, Table Name, Table No., Seat No., Player, Nation, Chips, Keyplayer
+- **신규**: PokerRoom, TableName, TableId, TableNo, SeatId, SeatNo, PlayerId, PlayerName, Nationality, ChipCount, Keyplayer
+- **목적**: Seats.csv 표준 구조 준수, 내부 ID 추가, 컬럼명 표준화
+
+### 📊 데이터 타입 변경
+- **TableNo**: 문자열 "T15" → 숫자 15
+- **SeatNo**: 문자열 "S3" → 숫자 3
+- **저장**: 숫자형으로 비교 효율성 향상
+- **표시**: UI에서 "T15", "S3" 형식 유지 (formatTableNo, formatSeatNo 헬퍼 함수)
+
+### 🆔 내부 ID 추가
+- **TableId**: Seats.csv 테이블 내부 ID (예: 43149)
+- **SeatId**: Seats.csv 좌석 내부 ID (예: 429396)
+- **PlayerId**: 플레이어 고유 ID (예: 104616)
+- **용도**: CSV 임포트 시 사용, 수동 입력 시 0
+
+### 🏷️ 컬럼명 표준화
+- `Player` → `PlayerName` (명확화)
+- `Nation` → `Nationality` (Seats.csv 표준)
+- `Chips` → `ChipCount` (Seats.csv 표준)
+- `Poker Room` → `PokerRoom` (공백 제거)
+- `Table Name` → `TableName` (공백 제거)
+
+### 🔧 tracker_gs.js 수정
+- **COLS 상수**: 8개 → 11개 컬럼 정의
+- **getKeyPlayers()**: 11개 필드 반환, 숫자형 비교
+- **getTablePlayers()**: tableId 숫자 변환, 11개 필드 반환
+- **updatePlayerChips()**: cols.chipCount 사용
+- **addPlayer()**: 11개 컬럼 입력, TableId/SeatId/PlayerId=0 (기본값)
+- **findPlayerRow_()**: 숫자형 비교 (toInt_ 사용)
+
+### 🎨 tracker.html 수정
+- **헬퍼 함수 추가**:
+  - `formatTableNo(15)` → "T15"
+  - `formatSeatNo(3)` → "S3"
+  - `parseTableNo("T15")` → 15
+  - `parseSeatNo("S3")` → 3
+- **renderKeyPlayers()**: 숫자 → 문자열 변환, playerName/nationality/chipCount 사용
+- **renderTablePlayers()**: 숫자 → 문자열 변환
+- **editChips()**: 숫자 파라미터 전달
+- **showTableView()**: formatTableNo로 제목 표시
+
+### 📝 문서 추가
+- [MIGRATION_SEATS_ONLY.md](MIGRATION_SEATS_ONLY.md): Seats.csv 기반 구조 적용 가이드
+- 기존 마이그레이션 계획 문서 (Players.csv 참조) 폐기
+
+### ⚠️ 주의사항
+- **Type 시트가 이미 Seats.csv 구조로 변경됨** (데이터 마이그레이션 불필요)
+- **코드만 수정**하여 새 구조에 맞게 동작
+- **Players.csv는 사용하지 않음** (Seats.csv만 참조)
+
+### 🧪 테스트 필요
+- [ ] getKeyPlayers() 호출 → 11개 필드 확인
+- [ ] getTablePlayers(15) 호출 → 숫자 파라미터 전달
+- [ ] 플레이어 추가 → 11개 컬럼 입력 확인
+- [ ] 칩 수정 → chipCount 컬럼 업데이트
+- [ ] UI 렌더링 → "T15", "S3" 형식 표시
+
+---
+
 ## v2.4.0 (2025-10-07) - 모바일 텍스트 크기 최적화 📱
 
 ### 🎨 키 플레이어 뷰 텍스트 100% 확대

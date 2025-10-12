@@ -120,6 +120,33 @@ if (typeof window.TRACKER_VERSION !== 'undefined') {
   }
 }
 
+/* ===== Helper Functions ===== */
+// 테이블 번호: 숫자 → "T15" 형식 변환
+function formatTableNo(num) {
+  return `T${num}`;
+}
+
+// 좌석 번호: 숫자 → "S3" 형식 변환
+function formatSeatNo(num) {
+  return `S${num}`;
+}
+
+// 테이블 번호: "T15" 또는 "15" → 숫자 변환
+function parseTableNo(str) {
+  const s = String(str).toUpperCase().trim();
+  if (!isNaN(s)) return parseInt(s);
+  if (s.startsWith('T')) return parseInt(s.substring(1));
+  return 0;
+}
+
+// 좌석 번호: "S3" 또는 "3" → 숫자 변환
+function parseSeatNo(str) {
+  const s = String(str).toUpperCase().trim();
+  if (!isNaN(s)) return parseInt(s);
+  if (s.startsWith('S')) return parseInt(s.substring(1));
+  return 0;
+}
+
 /* ===== State ===== */
 let currentView = 'key'; // 'key' | 'table'
 let currentTableId = null;
@@ -145,7 +172,7 @@ function showTableView(tableId) {
 
   document.getElementById('viewKeyPlayers').classList.add('hidden');
   document.getElementById('viewTable').classList.remove('hidden');
-  document.getElementById('tableTitle').textContent = tableId;
+  document.getElementById('tableTitle').textContent = formatTableNo(tableId);
   currentView = 'table';
   currentTableId = tableId;
   loadTablePlayers(tableId);
@@ -191,7 +218,7 @@ function renderKeyPlayers(players) {
     card.onclick = () => showTableView(p.tableNo);
     card.style.cursor = 'pointer';
 
-    const chipChange = getChipChange(p.tableNo, p.seatNo, p.chips);
+    const chipChange = getChipChange(p.tableNo, p.seatNo, p.chipCount);
     const changeHTML = chipChange.amount !== 0
       ? `<span class="chipChange ${chipChange.direction}">${chipChange.text}</span>`
       : '';
@@ -200,12 +227,12 @@ function renderKeyPlayers(players) {
       <div class="roomTableInfo">${formatRoomTableInfo(p.pokerRoom, p.tableName, p.tableNo)}</div>
       <div class="cardRow">
         <div class="playerInfo">
-          <span class="tableLabel">${p.tableNo}</span>
-          <span class="playerName">${p.player} (${p.seatNo})</span>
-          <span class="flag">${getFlag(p.nation)}</span>
+          <span class="tableLabel">${formatTableNo(p.tableNo)}</span>
+          <span class="playerName">${p.playerName} (${formatSeatNo(p.seatNo)})</span>
+          <span class="flag">${getFlag(p.nationality)}</span>
         </div>
         <div class="chipInfo">
-          <span class="chips" onclick="event.stopPropagation(); editChips('${p.tableNo}', '${p.seatNo}', ${p.chips}, '${p.player}')">${formatChips(p.chips)}</span>
+          <span class="chips" onclick="event.stopPropagation(); editChips(${p.tableNo}, ${p.seatNo}, ${p.chipCount}, '${p.playerName}')">${formatChips(p.chipCount)}</span>
           ${changeHTML}
         </div>
       </div>
@@ -255,18 +282,18 @@ function renderTablePlayers(tableId, players) {
 
     if (p.empty) {
       row.innerHTML = `
-        <span class="seat">${p.seatNo}</span>
+        <span class="seat">${formatSeatNo(p.seatNo)}</span>
         <span class="emptySeat">(빈 좌석)</span>
-        <button class="addBtn" onclick="addPlayerPrompt('${tableId}', '${p.seatNo}')">[+]</button>
+        <button class="addBtn" onclick="addPlayerPrompt(${tableId}, ${p.seatNo})">[+]</button>
       `;
     } else {
       const keyStar = p.keyplayer ? '<span class="keyStar">⭐</span>' : '';
       row.innerHTML = `
-        <span class="seat">${p.seatNo}</span>
-        <span class="name">${p.player}${keyStar}</span>
-        <span class="flag">${getFlag(p.nation)}</span>
-        <span class="chips" onclick="editChips('${tableId}', '${p.seatNo}', ${p.chips}, '${p.player}')">${formatChips(p.chips)}</span>
-        <button class="deleteBtn" onclick="deletePlayerConfirm('${tableId}', '${p.seatNo}', '${p.player}')">🗑️</button>
+        <span class="seat">${formatSeatNo(p.seatNo)}</span>
+        <span class="name">${p.playerName}${keyStar}</span>
+        <span class="flag">${getFlag(p.nationality)}</span>
+        <span class="chips" onclick="editChips(${tableId}, ${p.seatNo}, ${p.chipCount}, '${p.playerName}')">${formatChips(p.chipCount)}</span>
+        <button class="deleteBtn" onclick="deletePlayerConfirm(${tableId}, ${p.seatNo}, '${p.playerName}')">🗑️</button>
       `;
     }
 
@@ -280,12 +307,12 @@ function editChips(tableId, seatNo, currentChips, playerName) {
   const content = document.getElementById('overlayContent');
 
   content.innerHTML = `
-    <div class="overlayTitle">${seatNo} ${playerName} 칩 수정</div>
+    <div class="overlayTitle">${formatSeatNo(seatNo)} ${playerName} 칩 수정</div>
     <div class="muted" style="font-size:1.2rem;margin-bottom:var(--sp-md)">현재: ${formatChips(currentChips)}</div>
     <input type="text" id="chipInput" class="overlayInput" placeholder="예: 750000 또는 750k" autocomplete="off" inputmode="decimal">
     <div class="overlayActions">
       <button class="btnCancel" onclick="closeOverlay()">취소</button>
-      <button class="btnConfirm" onclick="confirmEditChips('${tableId}', '${seatNo}', ${currentChips})">확인</button>
+      <button class="btnConfirm" onclick="confirmEditChips(${tableId}, ${seatNo}, ${currentChips})">확인</button>
     </div>
   `;
 

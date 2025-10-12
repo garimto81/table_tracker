@@ -203,19 +203,23 @@ function getSheetData_(forceRefresh = false) {
 
   const data = readAll_Optimized_(sh);
 
+  // Seats.csv 기반 구조 (11개 컬럼)
   const cols = {
-    pokerRoom: findColIndex_(data.header, ['Poker Room', 'PokerRoom', 'poker_room']),
-    tableName: findColIndex_(data.header, ['Table Name', 'TableName', 'table_name']),
-    table: findColIndex_(data.header, ['Table No.', 'TableNo', 'table_no']),
-    seat: findColIndex_(data.header, ['Seat No.', 'Seat', 'SeatNo', 'seat_no']),
-    player: findColIndex_(data.header, ['Players', 'Player', 'Name']),
-    nation: findColIndex_(data.header, ['Nationality', 'Nation', 'Country']),
-    chips: findColIndex_(data.header, ['Chips', 'Stack', 'Starting Chips']),
-    key: findColIndex_(data.header, ['Keyplayer', 'Key Player', 'KeyPlayer', 'key_player'])
+    pokerRoom: findColIndex_(data.header, ['PokerRoom', 'Poker Room', 'poker_room']),
+    tableName: findColIndex_(data.header, ['TableName', 'Table Name', 'table_name']),
+    tableId: findColIndex_(data.header, ['TableId', 'Table Id', 'table_id']),
+    tableNo: findColIndex_(data.header, ['TableNo', 'Table No.', 'table_no']),
+    seatId: findColIndex_(data.header, ['SeatId', 'Seat Id', 'seat_id']),
+    seatNo: findColIndex_(data.header, ['SeatNo', 'Seat No.', 'Seat', 'seat_no']),
+    playerId: findColIndex_(data.header, ['PlayerId', 'Player Id', 'player_id']),
+    playerName: findColIndex_(data.header, ['PlayerName', 'Player Name', 'Players', 'Player', 'Name']),
+    nationality: findColIndex_(data.header, ['Nationality', 'Nation', 'Country']),
+    chipCount: findColIndex_(data.header, ['ChipCount', 'Chips', 'Stack', 'Starting Chips']),
+    keyplayer: findColIndex_(data.header, ['Keyplayer', 'Key Player', 'KeyPlayer', 'key_player'])
   };
 
-  if (cols.table === -1 || cols.seat === -1 || cols.player === -1) {
-    throw new Error('Type 시트에 필수 컬럼이 없습니다.');
+  if (cols.tableNo === -1 || cols.seatNo === -1 || cols.playerName === -1) {
+    throw new Error('Type 시트에 필수 컬럼(TableNo, SeatNo, PlayerName)이 없습니다.');
   }
 
   sheetCache = { sh, data, cols };
@@ -259,13 +263,13 @@ function findColIndex_(headerRow, aliases) {
 
 /* ===== 공통 헬퍼 ===== */
 function findPlayerRow_(data, cols, tableId, seatNo) {
-  const tableUpper = String(tableId).trim().toUpperCase();
-  const seatRaw = normalizeSeatRaw_(seatNo);
+  // TableNo, SeatNo는 이제 숫자형
+  const tableNum = toInt_(tableId);
+  const seatNum = toInt_(seatNo);
 
   return data.rows.findIndex(r => {
-    const tableMatch = String(r[cols.table]).trim().toUpperCase() === tableUpper;
-    const seatStr = normalizeSeatRaw_(r[cols.seat]);
-    const seatMatch = seatStr === seatRaw;
+    const tableMatch = toInt_(r[cols.tableNo]) === tableNum;
+    const seatMatch = toInt_(r[cols.seatNo]) === seatNum;
     return tableMatch && seatMatch;
   });
 }
@@ -313,27 +317,27 @@ function getKeyPlayers() {
 
     const players = data.rows
       .filter(row => {
-        const isKey = cols.key !== -1 && (
-          row[cols.key] === true ||
-          String(row[cols.key]).toUpperCase() === 'TRUE'
+        const isKey = cols.keyplayer !== -1 && (
+          row[cols.keyplayer] === true ||
+          String(row[cols.keyplayer]).toUpperCase() === 'TRUE'
         );
         return isKey;
       })
       .map(row => {
-        let seatNo = String(row[cols.seat] || '').trim();
-        if (/^\d+$/.test(seatNo)) seatNo = 'S' + seatNo;
-
         return {
           pokerRoom: cols.pokerRoom !== -1 ? validatePokerRoom_(row[cols.pokerRoom]) : '',
           tableName: cols.tableName !== -1 ? validateTableName_(row[cols.tableName]) : '',
-          tableNo: String(row[cols.table] || '').trim(),
-          seatNo,
-          player: String(row[cols.player] || '').trim(),
-          nation: cols.nation !== -1 ? String(row[cols.nation] || '').trim() : '',
-          chips: cols.chips !== -1 ? toInt_(row[cols.chips]) : 0
+          tableId: cols.tableId !== -1 ? toInt_(row[cols.tableId]) : 0,
+          tableNo: cols.tableNo !== -1 ? toInt_(row[cols.tableNo]) : 0,
+          seatId: cols.seatId !== -1 ? toInt_(row[cols.seatId]) : 0,
+          seatNo: cols.seatNo !== -1 ? toInt_(row[cols.seatNo]) : 0,
+          playerId: cols.playerId !== -1 ? toInt_(row[cols.playerId]) : 0,
+          playerName: String(row[cols.playerName] || '').trim(),
+          nationality: cols.nationality !== -1 ? String(row[cols.nationality] || '').trim() : '',
+          chipCount: cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0
         };
       })
-      .filter(p => p.tableNo && p.seatNo && p.player);
+      .filter(p => p.tableNo && p.seatNo && p.playerName);
 
     log_(LOG_LEVEL.INFO, 'getKeyPlayers', '키 플레이어 조회 완료', { count: players.length });
 
@@ -351,40 +355,46 @@ function getTablePlayers(tableId) {
   try {
     log_(LOG_LEVEL.INFO, 'getTablePlayers', '테이블 플레이어 조회 시작', { tableId });
 
-    const validTableId = validateTableId_(tableId);
+    const tableNum = toInt_(tableId);
     const { data, cols } = getSheetData_();
 
     const playersMap = {};
 
     data.rows.forEach(row => {
-      const t = String(row[cols.table] || '').trim().toUpperCase();
-      if (t !== validTableId) return;
+      const t = toInt_(row[cols.tableNo]);
+      if (t !== tableNum) return;
 
-      let seatNo = String(row[cols.seat] || '').trim().toUpperCase();
-      if (/^\d+$/.test(seatNo)) seatNo = 'S' + seatNo;
+      const seatNum = toInt_(row[cols.seatNo]);
 
-      const player = String(row[cols.player] || '').trim();
-      const nation = cols.nation !== -1 ? String(row[cols.nation] || '').trim() : '';
-      const chips = cols.chips !== -1 ? toInt_(row[cols.chips]) : 0;
-      const keyplayer = cols.key !== -1 && (
-        row[cols.key] === true ||
-        String(row[cols.key]).toUpperCase() === 'TRUE'
+      const playerName = String(row[cols.playerName] || '').trim();
+      const nationality = cols.nationality !== -1 ? String(row[cols.nationality] || '').trim() : '';
+      const chipCount = cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0;
+      const keyplayer = cols.keyplayer !== -1 && (
+        row[cols.keyplayer] === true ||
+        String(row[cols.keyplayer]).toUpperCase() === 'TRUE'
       );
 
-      if (seatNo && player) {
+      if (seatNum > 0 && playerName) {
         const pokerRoom = cols.pokerRoom !== -1 ? validatePokerRoom_(row[cols.pokerRoom]) : '';
         const tableName = cols.tableName !== -1 ? validateTableName_(row[cols.tableName]) : '';
-        playersMap[seatNo] = { pokerRoom, tableName, tableNo: validTableId, seatNo, player, nation, chips, keyplayer };
+        const tableId = cols.tableId !== -1 ? toInt_(row[cols.tableId]) : 0;
+        const seatId = cols.seatId !== -1 ? toInt_(row[cols.seatId]) : 0;
+        const playerId = cols.playerId !== -1 ? toInt_(row[cols.playerId]) : 0;
+
+        playersMap[seatNum] = {
+          pokerRoom, tableName, tableId, tableNo: tableNum,
+          seatId, seatNo: seatNum,
+          playerId, playerName, nationality, chipCount, keyplayer
+        };
       }
     });
 
     const players = [];
     for (let i = 1; i <= MAX_SEATS_PER_TABLE; i++) {
-      const seat = `S${i}`;
-      if (playersMap[seat]) {
-        players.push(playersMap[seat]);
+      if (playersMap[i]) {
+        players.push(playersMap[i]);
       } else {
-        players.push({ tableNo: validTableId, seatNo: seat, empty: true });
+        players.push({ tableNo: tableNum, seatNo: i, empty: true });
       }
     }
 
@@ -420,7 +430,7 @@ function updatePlayerChips(tableId, seatNo, newChips) {
       }
 
       const actualRow = rowIndex + 2;
-      sh.getRange(actualRow, cols.chips + 1).setValue(validChips);
+      sh.getRange(actualRow, cols.chipCount + 1).setValue(validChips);
 
       invalidateCache_();
 
@@ -455,28 +465,30 @@ function addPlayer(tableId, seatNo, name, nation, chips, isKey) {
       }
 
       const row = new Array(data.header.length).fill('');
-      // A/B열: Poker Room/Table Name 기본값 설정
-      if (cols.pokerRoom !== -1) row[cols.pokerRoom] = 'Merit Hall';
-      if (cols.tableName !== -1) row[cols.tableName] = 'Ocean Blue';
-      // 기존 컬럼
-      row[cols.table] = validTableId;
-      row[cols.seat] = normalizeSeatRaw_(validSeatNo);
-      if (cols.player !== -1) row[cols.player] = validName;
-      if (cols.nation !== -1) row[cols.nation] = nation || '';
-      if (cols.chips !== -1) row[cols.chips] = validChips;
-      if (cols.key !== -1) row[cols.key] = Boolean(isKey);
+      // Seats.csv 구조 (11개 컬럼)
+      if (cols.pokerRoom !== -1) row[cols.pokerRoom] = 'Main';
+      if (cols.tableName !== -1) row[cols.tableName] = 'Black';
+      if (cols.tableId !== -1) row[cols.tableId] = 0; // TableId는 임포트 시에만 사용
+      if (cols.tableNo !== -1) row[cols.tableNo] = toInt_(validTableId);
+      if (cols.seatId !== -1) row[cols.seatId] = 0; // SeatId는 임포트 시에만 사용
+      if (cols.seatNo !== -1) row[cols.seatNo] = toInt_(validSeatNo);
+      if (cols.playerId !== -1) row[cols.playerId] = 0; // PlayerId는 임포트 시에만 사용
+      if (cols.playerName !== -1) row[cols.playerName] = validName;
+      if (cols.nationality !== -1) row[cols.nationality] = nation || '';
+      if (cols.chipCount !== -1) row[cols.chipCount] = validChips;
+      if (cols.keyplayer !== -1) row[cols.keyplayer] = Boolean(isKey);
 
       sh.appendRow(row);
 
-      // 자동 정렬: Poker Room → Table Name → Table No. → Seat No. 순서
+      // 자동 정렬: PokerRoom → TableName → TableNo → SeatNo 순서
       const lastRow = sh.getLastRow();
       if (lastRow > 1) {
         const sortRange = sh.getRange(2, 1, lastRow - 1, sh.getLastColumn());
         sortRange.sort([
-          {column: 1, ascending: true},  // A열: Poker Room
-          {column: 2, ascending: true},  // B열: Table Name
-          {column: 3, ascending: true},  // C열: Table No.
-          {column: 4, ascending: true}   // D열: Seat No.
+          {column: cols.pokerRoom + 1, ascending: true},
+          {column: cols.tableName + 1, ascending: true},
+          {column: cols.tableNo + 1, ascending: true},
+          {column: cols.seatNo + 1, ascending: true}
         ]);
       }
 
