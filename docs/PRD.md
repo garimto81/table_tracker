@@ -101,6 +101,62 @@
 
 ---
 
+## Phase 3: 키 플레이어 사진 기능 (v3.1 예정)
+
+### 3.1 KeyPlayers 시트 사진 저장소 🔴 Critical
+- **근거**: PLAN 시나리오 1 (플레이어 시각적 식별 속도 향상)
+- **성공**: 사진으로 플레이어 식별 ≤ 0.5초, Type 시트 독립적 사진 보존
+- **아키텍처**: KeyPlayers 시트 (사진 저장소 전용, 2개 컬럼) + Type 시트 (SSOT)
+- **체크리스트**:
+  - [ ] KeyPlayers 시트 자동 생성 (2개 컬럼: PlayerName, PhotoURL)
+  - [ ] getKeyPlayers() 수정:
+    - [ ] Type 시트 Keyplayer=TRUE 필터링
+    - [ ] KeyPlayers 시트 사진 일괄 조회 (photoMap)
+    - [ ] PlayerName JOIN으로 데이터 병합 (동기화 로직 불필요)
+  - [ ] updateKeyPlayerPhoto() 함수 구현 (단순 INSERT/UPDATE)
+  - [ ] CSS 프로 스타일:
+    - [ ] `.keyPlayerCardPro` (그라데이션 카드, 96px 사진)
+    - [ ] `.roomTableInfoPro` (큰 헤더 배경)
+    - [ ] `.playerNameLarge`, `.playerNationFull`, `.playerChipsLarge`
+  - [ ] renderKeyPlayers() 수정:
+    - [ ] 96px 정사각형 사진 표시 (onerror fallback → 👤)
+    - [ ] 국적 풀네임 변환 (KR → "South Korea", 40개국)
+    - [ ] 칩 쉼표 포맷 (520000 → "520,000")
+    - [ ] 위치 아이콘 (📍 Table 15, Seat 3)
+    - [ ] 액션 버튼 (사진 수정, 테이블 보기)
+  - [ ] editPlayerPhoto() 팝업 (미리보기 + Imgur URL 입력)
+- **예상**: 3.5시간
+- **의존성**: Phase 1.5 (Poker Room/Table Name 표시)
+- **문서**: [FEATURE_PLAYER_PHOTO.md](FEATURE_PLAYER_PHOTO.md)
+
+### 3.1 상세 기능
+**KeyPlayers 시트 구조 (2개 컬럼만)**:
+```
+A: PlayerName (PK) - "박프로"
+B: PhotoURL (HTTPS) - "https://i.imgur.com/abc.jpg"
+```
+
+**핵심 장점**:
+- ✅ 극단적 단순성: 사진 URL만 저장, 중복 데이터 없음
+- ✅ Type 시트 = SSOT: 테이블/좌석/칩 등 모든 실제 데이터
+- ✅ 동기화 불필요: 단순 JOIN으로 데이터 병합
+- ✅ 사진만 영구 보존: Type 시트 변경해도 사진 유지
+- ✅ 빠른 성능: 18명만 관리, 2개 컬럼만 읽기
+
+**데이터 흐름**:
+1. Type 시트 (Keyplayer=TRUE) + KeyPlayers JOIN (사진)
+2. UI 렌더링 (Type 데이터 + 사진)
+3. UI → KeyPlayers 업데이트 (사진만)
+
+**Imgur 무료 호스팅**:
+- 무제한 용량, 영구 보존
+- 직접 링크: https://i.imgur.com/abc.jpg
+- 모바일 앱 지원 (iOS/Android)
+- Phase 3.1: URL 직접 입력 (API 없이)
+- Phase 3.2: Imgur API 자동 업로드 (선택)
+
+---
+
 ## Phase 2: 편의성 개선 (v2.3 예정)
 
 ### 2.1 키 플레이어 테이블 이동 🟡 Medium
