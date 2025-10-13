@@ -24,6 +24,7 @@ try {
 
 /* ===== 설정 ===== */
 const TYPE_SHEET_NAME = 'Type';
+const KEYPLAYERS_SHEET_NAME = 'KeyPlayers';
 const MAX_SEATS_PER_TABLE = 9;
 const CACHE_TTL = 1000; // 1초
 const MAX_LOCK_WAIT = 10000; // 10초
@@ -305,16 +306,145 @@ function errorResponse_(functionName, error) {
   };
 }
 
+/* ===== KeyPlayers 시트 관리 (Phase 3.1) ===== */
+
+/**
+ * KeyPlayers 시트 초기화 (2개 컬럼만)
+ * A: PlayerName (PK)
+ * B: PhotoURL (HTTPS)
+ */
+function initKeyPlayersSheet() {
+  try {
+    const ss = appSS_();
+    let sheet = ss.getSheetByName(KEYPLAYERS_SHEET_NAME);
+
+    // 시트가 없으면 생성
+    if (!sheet) {
+      sheet = ss.insertSheet(KEYPLAYERS_SHEET_NAME);
+      sheet.getRange('A1').setValue('PlayerName');
+      sheet.getRange('B1').setValue('PhotoURL');
+
+      // 헤더 스타일
+      const headerRange = sheet.getRange('A1:B1');
+      headerRange.setFontWeight('bold');
+      headerRange.setBackground('#4285F4');
+      headerRange.setFontColor('#FFFFFF');
+
+      // 컬럼 너비
+      sheet.setColumnWidth(1, 150); // PlayerName
+      sheet.setColumnWidth(2, 400); // PhotoURL
+
+      log_(LOG_LEVEL.INFO, 'initKeyPlayersSheet', 'KeyPlayers 시트 생성 완료');
+    }
+
+    return successResponse_({ message: 'KeyPlayers 시트 준비 완료' });
+
+  } catch (e) {
+    return errorResponse_('initKeyPlayersSheet', e);
+  }
+}
+
+/**
+ * KeyPlayers 시트에서 사진 URL 조회 (photoMap 반환)
+ * @return {Object} { "박프로": "https://i.imgur.com/abc.jpg", ... }
+ */
+function getKeyPlayersPhotoMap_() {
+  const ss = appSS_();
+  const sheet = ss.getSheetByName(KEYPLAYERS_SHEET_NAME);
+
+  const photoMap = {};
+
+  if (!sheet) {
+    return photoMap; // 시트 없으면 빈 객체 반환
+  }
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return photoMap; // 데이터 없으면 빈 객체
+  }
+
+  const values = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+
+  values.forEach(row => {
+    const playerName = String(row[0] || '').trim();
+    const photoUrl = String(row[1] || '').trim();
+
+    if (playerName && photoUrl) {
+      photoMap[playerName] = photoUrl;
+    }
+  });
+
+  return photoMap;
+}
+
+/**
+ * KeyPlayers 시트에 사진 URL 업데이트 (INSERT or UPDATE)
+ * @param {string} playerName - 플레이어 이름
+ * @param {string} photoUrl - HTTPS 사진 URL
+ */
+function updateKeyPlayerPhoto(playerName, photoUrl) {
+  return withScriptLock_(() => {
+    try {
+      log_(LOG_LEVEL.INFO, 'updateKeyPlayerPhoto', '사진 업데이트 시작', { playerName, photoUrl });
+
+      // 검증
+      const validName = validatePlayerName_(playerName);
+      const validUrl = String(photoUrl || '').trim();
+
+      if (!validUrl.startsWith('https://')) {
+        throw new Error('사진 URL은 HTTPS로 시작해야 합니다.');
+      }
+
+      // KeyPlayers 시트 확인/생성
+      initKeyPlayersSheet();
+
+      const ss = appSS_();
+      const sheet = ss.getSheetByName(KEYPLAYERS_SHEET_NAME);
+      const lastRow = sheet.getLastRow();
+
+      // 기존 행 찾기
+      let targetRow = -1;
+      if (lastRow >= 2) {
+        const names = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (let i = 0; i < names.length; i++) {
+          if (String(names[i][0]).trim() === validName) {
+            targetRow = i + 2;
+            break;
+          }
+        }
+      }
+
+      if (targetRow !== -1) {
+        // UPDATE
+        sheet.getRange(targetRow, 2).setValue(validUrl);
+        log_(LOG_LEVEL.INFO, 'updateKeyPlayerPhoto', '사진 URL 업데이트 완료 (UPDATE)');
+      } else {
+        // INSERT
+        sheet.appendRow([validName, validUrl]);
+        log_(LOG_LEVEL.INFO, 'updateKeyPlayerPhoto', '사진 URL 추가 완료 (INSERT)');
+      }
+
+      return successResponse_({ playerName: validName, photoUrl: validUrl });
+
+    } catch (e) {
+      return errorResponse_('updateKeyPlayerPhoto', e);
+    }
+  });
+}
+
 /* ===== 읽기 함수 ===== */
 
 /**
- * 키 플레이어 목록 반환
+ * 키 플레이어 목록 반환 (사진 포함)
  */
 function getKeyPlayers() {
   try {
     log_(LOG_LEVEL.INFO, 'getKeyPlayers', '키 플레이어 조회 시작');
 
     const { data, cols } = getSheetData_();
+
+    // KeyPlayers 시트에서 사진 MAP 조회
+    const photoMap = getKeyPlayersPhotoMap_();
 
     const players = data.rows
       .filter(row => {
@@ -324,6 +454,8 @@ function getKeyPlayers() {
         return isKey;
       })
       .map(row => {
+        const playerName = String(row[cols.playerName] || '').trim();
+
         return {
           pokerRoom: cols.pokerRoom !== -1 ? validatePokerRoom_(row[cols.pokerRoom]) : '',
           tableName: cols.tableName !== -1 ? validateTableName_(row[cols.tableName]) : '',
@@ -332,9 +464,10 @@ function getKeyPlayers() {
           seatId: cols.seatId !== -1 ? toInt_(row[cols.seatId]) : 0,
           seatNo: cols.seatNo !== -1 ? toInt_(row[cols.seatNo]) : 0,
           playerId: cols.playerId !== -1 ? toInt_(row[cols.playerId]) : 0,
-          playerName: String(row[cols.playerName] || '').trim(),
+          playerName: playerName,
           nationality: cols.nationality !== -1 ? String(row[cols.nationality] || '').trim() : '',
-          chipCount: cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0
+          chipCount: cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0,
+          photoUrl: photoMap[playerName] || ''  // JOIN: PlayerName으로 사진 매칭
         };
       })
       .filter(p => p.tableNo > 0 && p.seatNo > 0 && p.playerName);

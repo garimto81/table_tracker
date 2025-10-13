@@ -10,7 +10,8 @@
       "Bash(cat:*)",
       "Bash(git add:*)",
       "Bash(git config:*)",
-      "Bash(clasp:*)"
+      "Bash(clasp:*)",
+      "Bash(npx @google/clasp push:*)"
     ],
     "deny": [],
     "ask": []

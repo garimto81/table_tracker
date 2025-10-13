@@ -2,14 +2,16 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.0.1',
-  name: 'Keyplayer Column Fixed Index',
-  date: '2025-10-12',
-  phase: '3.0',
+  current: 'v3.1.0',
+  name: 'Player Photo Feature',
+  date: '2025-10-13',
+  phase: '3.1',
   changes: [
-    'K열 Keyplayer 인덱스 고정 (헤더 무관, 인덱스 10)',
-    '키 플레이어 필터링 로직 개선 (헤더 이름 의존성 제거)',
-    'tableNo/seatNo > 0 조건으로 필터링 수정 (falsy 방지)'
+    'KeyPlayers 시트 추가 (PlayerName, PhotoURL 2컬럼)',
+    '96px 사진 + 프로 디자인 UI 구현',
+    '국가 이름 매핑 40개국 (KR → South Korea)',
+    '사진 편집 팝업 구현 (Imgur URL 입력)',
+    'getKeyPlayers() photoUrl 필드 JOIN 추가'
   ],
   deployment: {
     id: '@12',
@@ -19,32 +21,36 @@ const VERSION = {
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
   },
   files: {
-    'tracker_gs.js': 'v3.0.1',
-    'tracker.html': 'v3.0.0',
-    'docs/STATUS.md': 'v3.0.0',
-    'docs/CHANGELOG.md': 'v3.0.1',
-    'docs/PRD.md': 'v2.4.0',
+    'tracker_gs.js': 'v3.1.0',
+    'tracker.html': 'v3.1.0',
+    'docs/STATUS.md': 'v3.1.0',
+    'docs/CHANGELOG.md': 'v3.1.0',
+    'docs/PRD.md': 'v3.1.0',
     'docs/LLD.md': 'v2.4.0',
     'docs/PLAN.md': 'v2.4.0',
-    'docs/MIGRATION_SEATS_ONLY.md': 'v3.0.0'
+    'docs/MIGRATION_SEATS_ONLY.md': 'v3.0.0',
+    'docs/FEATURE_PLAYER_PHOTO.md': 'v3.1.0',
+    'docs/PHASE_3.1_SUMMARY.md': 'v3.1.0',
+    'ROLLBACK_INFO.md': 'v3.0.1'
   },
   status: {
     state: '✅ 배포 준비 완료',
-    phase: 'Phase 3.0.1 (100% 완료)',
+    phase: 'Phase 3.1 (100% 완료)',
     blockers: [
-      '⚠️ 웹앱 배포 후 키 플레이어 표시 확인 필요'
+      '⚠️ 웹앱 배포 후 사진 표시 확인 필요',
+      '⚠️ KeyPlayers 시트 자동 생성 확인 필요'
     ],
     lastCompleted: [
+      '✅ 플레이어 사진 기능 추가 (v3.1.0)',
       '✅ Keyplayer 컬럼 인덱스 고정 (v3.0.1)',
-      '✅ Seats.csv 구조 마이그레이션 (v3.0.0)',
-      '✅ 모바일 텍스트 크기 최적화 (v2.4.0)'
+      '✅ Seats.csv 구조 마이그레이션 (v3.0.0)'
     ]
   },
   next: {
-    version: 'v3.1.0',
-    phase: '3.1',
-    target: '플레이어 사진 기능 추가 (L열 PlayerPhoto)',
-    estimatedDate: '2025-10-13'
+    version: 'v3.2.0',
+    phase: '3.2',
+    target: 'Imgur API 자동 업로드 (Optional)',
+    estimatedDate: 'TBD'
   }
 };
 

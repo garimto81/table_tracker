@@ -76,6 +76,19 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
 /* === Poker Room/Table Name === */
 .roomTableInfo{font-family:'Roboto',system-ui,sans-serif;font-size:.7rem;font-weight:600;text-align:left;background:linear-gradient(135deg,#1e2a45,#2a3556);color:#cbd5e1;padding:var(--sp-xs) var(--sp-md);border-radius:var(--sp-sm);margin-bottom:var(--sp-sm);border:1px solid #3a4a6f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
 
+/* === Player Photo (Phase 3.1) === */
+.keyPlayerCardPro{background:linear-gradient(135deg,#1a1d2e,#252a42);border:2px solid #3a4a6f;border-radius:var(--sp-md);padding:var(--sp-md);margin-bottom:var(--sp-sm);display:flex;gap:var(--sp-md);align-items:center;cursor:pointer;transition:all .2s}
+.keyPlayerCardPro:hover{border-color:#4a5a8f;transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.4)}
+.playerPhotoPro{width:96px;height:96px;border-radius:var(--sp-sm);object-fit:cover;border:2px solid #3a4a6f;flex-shrink:0;background:#0b0d12}
+.playerPhotoPro.empty{display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:var(--muted)}
+.playerDetailsPro{flex:1;display:flex;flex-direction:column;gap:var(--sp-xs);min-width:0}
+.playerNamePro{font-size:1.8rem;font-weight:800;color:#e7eaf0;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.playerMetaPro{display:flex;align-items:center;gap:var(--sp-sm);font-size:1.3rem;color:#9aa3b2;flex-wrap:wrap}
+.playerMetaPro .icon{margin-right:2px}
+.countryNamePro{font-weight:600;color:#a9b8ff}
+.chipsEditBtn{background:transparent;border:1px solid var(--acc);color:var(--acc);padding:var(--sp-xs) var(--sp-sm);border-radius:var(--sp-xs);font-size:1.1rem;cursor:pointer;font-weight:600;margin-left:auto}
+.photoEditBtn{background:transparent;border:1px solid #6b7280;color:#9aa3b2;padding:var(--sp-xs) var(--sp-sm);border-radius:var(--sp-xs);font-size:1.1rem;cursor:pointer;align-self:flex-start}
+
 /* === Loading === */
 .loading{text-align:center;padding:var(--sp-lg);color:var(--muted)}
 .error{background:#b91c1c;color:#ffe5e5;padding:var(--sp-md);border-radius:var(--sp-sm);margin-bottom:var(--sp-md);font-size:.9rem}
@@ -147,6 +160,21 @@ function parseSeatNo(str) {
   return 0;
 }
 
+// 국가 코드 → 국가명 (40개국)
+function getCountryName(code) {
+  const map = {
+    'KR': 'South Korea', 'US': 'USA', 'CN': 'China', 'JP': 'Japan', 'GB': 'England',
+    'DE': 'Germany', 'FR': 'France', 'IT': 'Italy', 'ES': 'Spain', 'PT': 'Portugal',
+    'BR': 'Brazil', 'AR': 'Argentina', 'MX': 'Mexico', 'CA': 'Canada', 'AU': 'Australia',
+    'NZ': 'New Zealand', 'RU': 'Russia', 'UA': 'Ukraine', 'PL': 'Poland', 'CZ': 'Czech Republic',
+    'SE': 'Sweden', 'NO': 'Norway', 'FI': 'Finland', 'DK': 'Denmark', 'NL': 'Netherlands',
+    'BE': 'Belgium', 'CH': 'Switzerland', 'AT': 'Austria', 'GR': 'Greece', 'TR': 'Turkey',
+    'IL': 'Israel', 'AE': 'UAE', 'IN': 'India', 'TH': 'Thailand', 'VN': 'Vietnam',
+    'PH': 'Philippines', 'ID': 'Indonesia', 'MY': 'Malaysia', 'SG': 'Singapore', 'HK': 'Hong Kong'
+  };
+  return map[String(code).toUpperCase()] || code;
+}
+
 /* ===== State ===== */
 let currentView = 'key'; // 'key' | 'table'
 let currentTableId = null;
@@ -214,27 +242,31 @@ function renderKeyPlayers(players) {
 
   players.forEach(p => {
     const card = document.createElement('div');
-    card.className = 'keyPlayerCard';
+    card.className = 'keyPlayerCardPro';
     card.onclick = () => showTableView(p.tableNo);
-    card.style.cursor = 'pointer';
 
-    const chipChange = getChipChange(p.tableNo, p.seatNo, p.chipCount);
-    const changeHTML = chipChange.amount !== 0
-      ? `<span class="chipChange ${chipChange.direction}">${chipChange.text}</span>`
-      : '';
+    // 사진 HTML
+    const photoHTML = p.photoUrl
+      ? `<img src="${p.photoUrl}" class="playerPhotoPro" alt="${p.playerName}" onerror="this.outerHTML='<div class=\\'playerPhotoPro empty\\'>👤</div>'">`
+      : `<div class="playerPhotoPro empty">👤</div>`;
+
+    // 국가명
+    const countryName = getCountryName(p.nationality);
+
+    // 칩 쉼표 포맷
+    const chipsFormatted = formatChips(p.chipCount);
 
     card.innerHTML = `
       <div class="roomTableInfo">${formatRoomTableInfo(p.pokerRoom, p.tableName, p.tableNo)}</div>
-      <div class="cardRow">
-        <div class="playerInfo">
-          <span class="tableLabel">${formatTableNo(p.tableNo)}</span>
-          <span class="playerName">${p.playerName} (${formatSeatNo(p.seatNo)})</span>
-          <span class="flag">${getFlag(p.nationality)}</span>
+      ${photoHTML}
+      <div class="playerDetailsPro">
+        <div class="playerNamePro">${p.playerName}</div>
+        <div class="playerMetaPro">
+          <span><span class="icon">📍</span>${formatTableNo(p.tableNo)}, ${formatSeatNo(p.seatNo)}</span>
+          <span class="countryNamePro">${getFlag(p.nationality)} ${countryName}</span>
+          <span><span class="icon">💰</span>${chipsFormatted} chips</span>
         </div>
-        <div class="chipInfo">
-          <span class="chips" onclick="event.stopPropagation(); editChips(${p.tableNo}, ${p.seatNo}, ${p.chipCount}, '${p.playerName}')">${formatChips(p.chipCount)}</span>
-          ${changeHTML}
-        </div>
+        <button class="photoEditBtn" onclick="event.stopPropagation(); editPlayerPhoto('${p.playerName}', '${p.photoUrl || ''}')">📷 사진 편집</button>
       </div>
     `;
 
@@ -453,6 +485,65 @@ function deletePlayerConfirm(tableId, seatNo, playerName) {
       hideLoading();
     })
     .removePlayer(tableId, seatNo);
+}
+
+/* ===== Player Photo Edit (Phase 3.1) ===== */
+function editPlayerPhoto(playerName, currentPhotoUrl) {
+  const overlay = document.getElementById('overlay');
+  const content = document.getElementById('overlayContent');
+
+  content.innerHTML = `
+    <div class="overlayTitle">📷 ${playerName} 사진 편집</div>
+    <input type="text" id="photoUrlInput" class="overlayInput" placeholder="https://i.imgur.com/abc123.jpg" value="${currentPhotoUrl}">
+    <div style="font-size: 1.1rem; color: #9aa3b2; margin-top: -8px; margin-bottom: 12px;">
+      💡 <a href="https://imgur.com/" target="_blank" style="color: #2a6fff;">Imgur</a>에 사진 업로드 후 HTTPS URL 입력
+    </div>
+    <div class="overlayActions">
+      <button class="btnCancel" onclick="closeOverlay()">취소</button>
+      <button class="btnConfirm" onclick="confirmPhotoEdit('${playerName}')">저장</button>
+    </div>
+  `;
+
+  overlay.classList.add('show');
+
+  // 포커스
+  setTimeout(() => {
+    const input = document.getElementById('photoUrlInput');
+    if (input) input.focus();
+  }, 100);
+}
+
+function confirmPhotoEdit(playerName) {
+  const input = document.getElementById('photoUrlInput');
+  const photoUrl = input.value.trim();
+
+  if (!photoUrl) {
+    alert('사진 URL을 입력하세요.');
+    return;
+  }
+
+  if (!photoUrl.startsWith('https://')) {
+    alert('HTTPS로 시작하는 URL을 입력하세요.');
+    return;
+  }
+
+  closeOverlay();
+  showLoading();
+
+  google.script.run
+    .withSuccessHandler(response => {
+      if (!response.success) {
+        alert(`에러: ${response.error?.message || '사진 업데이트 실패'}`);
+        hideLoading();
+        return;
+      }
+      loadKeyPlayers();
+    })
+    .withFailureHandler(err => {
+      alert(`에러: ${err.message}`);
+      hideLoading();
+    })
+    .updateKeyPlayerPhoto(playerName, photoUrl);
 }
 
 /* ===== Utilities ===== */
