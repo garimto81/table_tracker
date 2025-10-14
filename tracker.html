@@ -218,6 +218,16 @@ function loadKeyPlayers() {
         return;
       }
       const players = response.data.players;
+
+      // 디버깅: 첫 번째 플레이어 데이터 전체 출력
+      console.log('=== getKeyPlayers 응답 ===');
+      console.log('전체 플레이어 수:', players.length);
+      if (players.length > 0) {
+        console.log('첫 번째 플레이어 데이터:', players[0]);
+        console.log('photoUrl 필드:', players[0].photoUrl);
+        console.log('photoUrl 타입:', typeof players[0].photoUrl);
+      }
+
       keyPlayers = players;
       renderKeyPlayers(players);
     })

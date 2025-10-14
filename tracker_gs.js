@@ -221,6 +221,13 @@ function getSheetData_(forceRefresh = false) {
     photoUrl: 13    // N열 고정 (Phase 3.1)
   };
 
+  // 디버깅: 헤더와 첫 번째 데이터 행 확인
+  log_(LOG_LEVEL.INFO, 'getSheetData_', 'Type 시트 구조 확인', {
+    totalColumns: data.header.length,
+    headerN: data.header[13],
+    firstRowN: data.rows.length > 0 ? data.rows[0][13] : 'NO_DATA'
+  });
+
   if (cols.tableNo === -1 || cols.seatNo === -1 || cols.playerName === -1) {
     throw new Error('Type 시트에 필수 컬럼(TableNo, SeatNo, PlayerName)이 없습니다.');
   }
@@ -392,6 +399,16 @@ function getKeyPlayers() {
       })
       .map(row => {
         const playerName = String(row[cols.playerName] || '').trim();
+        const photoUrl = cols.photoUrl !== -1 ? String(row[cols.photoUrl] || '').trim() : '';
+
+        // 디버깅: 첫 번째 플레이어의 photoUrl 확인
+        if (playerName) {
+          log_(LOG_LEVEL.INFO, 'getKeyPlayers', `플레이어 "${playerName}"`, {
+            photoUrlIndex: cols.photoUrl,
+            photoUrlRaw: row[cols.photoUrl],
+            photoUrlProcessed: photoUrl
+          });
+        }
 
         return {
           pokerRoom: cols.pokerRoom !== -1 ? validatePokerRoom_(row[cols.pokerRoom]) : '',
@@ -404,12 +421,15 @@ function getKeyPlayers() {
           playerName: playerName,
           nationality: cols.nationality !== -1 ? String(row[cols.nationality] || '').trim() : '',
           chipCount: cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0,
-          photoUrl: cols.photoUrl !== -1 ? String(row[cols.photoUrl] || '').trim() : ''  // N열에서 직접 읽기
+          photoUrl: photoUrl  // N열에서 직접 읽기
         };
       })
       .filter(p => p.tableNo > 0 && p.seatNo > 0 && p.playerName);
 
-    log_(LOG_LEVEL.INFO, 'getKeyPlayers', '키 플레이어 조회 완료', { count: players.length });
+    log_(LOG_LEVEL.INFO, 'getKeyPlayers', '키 플레이어 조회 완료', {
+      count: players.length,
+      firstPlayerPhotoUrl: players.length > 0 ? players[0].photoUrl : 'N/A'
+    });
 
     return successResponse_({ players, count: players.length });
 
