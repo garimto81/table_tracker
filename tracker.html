@@ -258,8 +258,11 @@ function renderKeyPlayers(players) {
     // 사진 HTML - URL이 있으면 이미지 표시, 없으면 기본 아이콘
     let photoHTML;
     if (p.photoUrl && p.photoUrl.trim()) {
+      // Imgur URL을 직접 이미지 링크로 자동 변환
+      const directImageUrl = convertToDirectImageUrl(p.photoUrl);
+
       // URL이 있을 때: img 태그로 표시
-      photoHTML = `<img src="${p.photoUrl}"
+      photoHTML = `<img src="${directImageUrl}"
         class="playerPhotoPro"
         alt="${p.playerName}"
         crossorigin="anonymous"
@@ -544,16 +547,30 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
 
 function confirmPhotoEdit(playerName) {
   const input = document.getElementById('photoUrlInput');
-  const photoUrl = input.value.trim();
+  let photoUrl = input.value.trim();
 
   if (!photoUrl) {
     alert('사진 URL을 입력하세요.');
     return;
   }
 
-  if (!photoUrl.startsWith('https://')) {
-    alert('HTTPS로 시작하는 URL을 입력하세요.');
+  if (!photoUrl.startsWith('https://') && !photoUrl.startsWith('http://')) {
+    alert('HTTP(S)로 시작하는 URL을 입력하세요.');
     return;
+  }
+
+  // Imgur URL 자동 변환 및 사용자 안내
+  const directUrl = convertToDirectImageUrl(photoUrl);
+  if (directUrl !== photoUrl) {
+    const confirmed = confirm(
+      `Imgur 페이지 URL이 감지되었습니다.\n\n` +
+      `원본: ${photoUrl}\n` +
+      `변환: ${directUrl}\n\n` +
+      `직접 이미지 링크로 변환하여 저장하시겠습니까?`
+    );
+    if (confirmed) {
+      photoUrl = directUrl;
+    }
   }
 
   closeOverlay();
@@ -576,6 +593,34 @@ function confirmPhotoEdit(playerName) {
 }
 
 /* ===== Utilities ===== */
+/**
+ * Imgur URL을 직접 이미지 링크로 변환
+ * @param {string} url - 원본 URL
+ * @return {string} 변환된 URL
+ */
+function convertToDirectImageUrl(url) {
+  if (!url || !url.trim()) return '';
+
+  const trimmedUrl = url.trim();
+
+  // 이미 직접 이미지 링크면 그대로 반환
+  if (trimmedUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+    return trimmedUrl;
+  }
+
+  // Imgur 페이지 URL → 직접 이미지 링크 변환
+  // https://imgur.com/abc123 → https://i.imgur.com/abc123.jpg
+  const imgurMatch = trimmedUrl.match(/^https?:\/\/imgur\.com\/([a-zA-Z0-9]+)$/);
+  if (imgurMatch) {
+    const imageId = imgurMatch[1];
+    console.log(`Imgur URL 변환: ${trimmedUrl} → https://i.imgur.com/${imageId}.jpg`);
+    return `https://i.imgur.com/${imageId}.jpg`;
+  }
+
+  // 기타 URL은 그대로 반환
+  return trimmedUrl;
+}
+
 /**
  * Poker Room, Table Name, Table No를 포맷팅
  * @param {string} pokerRoom - Poker Room 이름
