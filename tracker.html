@@ -261,11 +261,7 @@ function renderKeyPlayers(players) {
     // 칩 쉼표 포맷
     const chipsFormatted = formatChips(p.chipCount);
 
-    // 특수문자 이스케이프 (작은따옴표 처리)
-    const safeName = p.playerName.replace(/'/g, "\\'");
-    const safePhotoUrl = (p.photoUrl || '').replace(/'/g, "\\'");
-
-    // 카드 구조 생성 (사진 제외)
+    // 카드 구조 생성 (사진 및 이벤트 제외)
     card.innerHTML = `
       <div class="roomTableInfo">${formatRoomTableInfo(p.pokerRoom, p.tableName, p.tableNo)}</div>
       <div class="photoContainer"></div>
@@ -276,9 +272,16 @@ function renderKeyPlayers(players) {
           <span class="countryNamePro">${getFlag(p.nationality)} ${countryName}</span>
           <span><span class="icon">💰</span>${chipsFormatted} chips</span>
         </div>
-        <button class="photoEditBtn" onclick="event.stopPropagation(); editPlayerPhoto('${safeName}', '${safePhotoUrl}')">📷 사진 편집</button>
+        <button class="photoEditBtn">📷 사진 편집</button>
       </div>
     `;
+
+    // 사진 편집 버튼 이벤트 (DOM으로 안전하게 연결)
+    const photoEditBtn = card.querySelector('.photoEditBtn');
+    photoEditBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      editPlayerPhoto(p.playerName, p.photoUrl || '');
+    });
 
     // 사진 요소를 DOM으로 직접 생성 (innerHTML 사용 안 함)
     const photoContainer = card.querySelector('.photoContainer');
