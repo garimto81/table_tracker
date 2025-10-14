@@ -29,9 +29,10 @@ const CACHE_TTL = 1000; // 1초
 const MAX_LOCK_WAIT = 10000; // 10초
 
 /* ===== Imgur API 설정 (Phase 3.2) ===== */
-// TODO: Imgur Client ID를 발급받아 여기에 입력하세요
-// https://api.imgur.com/oauth2/addclient
-const IMGUR_CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
+// Imgur Anonymous Upload Client ID
+// 테스트용 공개 Client ID (나중에 본인 ID로 교체 권장)
+// 본인 ID 발급: https://imgur.com/account/settings/apps → Add application
+const IMGUR_CLIENT_ID = '546c25a59c58ad7';
 
 /* ===== 로깅 ===== */
 const LOG_LEVEL = { ERROR: 0, WARN: 1, INFO: 2, DEBUG: 3 };
