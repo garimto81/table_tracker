@@ -108,7 +108,7 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
 
   <!-- Table View -->
   <div id="viewTable" class="hidden">
-    <button class="backBtn" onclick="showKeyPlayerView()">← Back</button>
+    <button class="backBtn">← Back</button>
     <div class="panel">
       <h2 id="tableTitle">T##</h2>
       <div id="tablePlayerList"></div>
@@ -183,6 +183,12 @@ let keyPlayers = [];
 /* ===== Init ===== */
 window.onload = () => {
   loadKeyPlayers();
+
+  // Back 버튼 이벤트 연결
+  const backBtn = document.querySelector('.backBtn');
+  if (backBtn) {
+    backBtn.addEventListener('click', showKeyPlayerView);
+  }
 };
 
 /* ===== View Switching ===== */
@@ -374,18 +380,34 @@ function renderTablePlayers(tableId, players) {
       row.innerHTML = `
         <span class="seat">${formatSeatNo(p.seatNo)}</span>
         <span class="emptySeat">(빈 좌석)</span>
-        <button class="addBtn" onclick="addPlayerPrompt(${tableId}, ${p.seatNo})">[+]</button>
+        <button class="addBtn">[+]</button>
       `;
+
+      // 이벤트 안전하게 연결
+      const addBtn = row.querySelector('.addBtn');
+      addBtn.addEventListener('click', () => addPlayerPrompt(tableId, p.seatNo));
+
     } else {
       const keyStar = p.keyplayer ? '<span class="keyStar">⭐</span>' : '';
-      const safeName = p.playerName.replace(/'/g, "\\'");
       row.innerHTML = `
         <span class="seat">${formatSeatNo(p.seatNo)}</span>
         <span class="name">${p.playerName}${keyStar}</span>
         <span class="flag">${getFlag(p.nationality)}</span>
-        <span class="chips" onclick="editChips(${tableId}, ${p.seatNo}, ${p.chipCount}, '${safeName}')">${formatChips(p.chipCount)}</span>
-        <button class="deleteBtn" onclick="deletePlayerConfirm(${tableId}, ${p.seatNo}, '${safeName}')">🗑️</button>
+        <span class="chips">${formatChips(p.chipCount)}</span>
+        <button class="deleteBtn">🗑️</button>
       `;
+
+      // 이벤트 안전하게 연결 (DOM API)
+      const chipsSpan = row.querySelector('.chips');
+      chipsSpan.style.cursor = 'pointer';
+      chipsSpan.addEventListener('click', () => {
+        editChips(tableId, p.seatNo, p.chipCount, p.playerName);
+      });
+
+      const deleteBtn = row.querySelector('.deleteBtn');
+      deleteBtn.addEventListener('click', () => {
+        deletePlayerConfirm(tableId, p.seatNo, p.playerName);
+      });
     }
 
     list.appendChild(row);
@@ -402,10 +424,17 @@ function editChips(tableId, seatNo, currentChips, playerName) {
     <div class="muted" style="font-size:1.2rem;margin-bottom:var(--sp-md)">현재: ${formatChips(currentChips)}</div>
     <input type="text" id="chipInput" class="overlayInput" placeholder="예: 750000 또는 750k" autocomplete="off" inputmode="decimal">
     <div class="overlayActions">
-      <button class="btnCancel" onclick="closeOverlay()">취소</button>
-      <button class="btnConfirm" onclick="confirmEditChips(${tableId}, ${seatNo}, ${currentChips})">확인</button>
+      <button class="btnCancel">취소</button>
+      <button class="btnConfirm">확인</button>
     </div>
   `;
+
+  // 이벤트 안전하게 연결
+  const btnCancel = content.querySelector('.btnCancel');
+  const btnConfirm = content.querySelector('.btnConfirm');
+
+  btnCancel.addEventListener('click', closeOverlay);
+  btnConfirm.addEventListener('click', () => confirmEditChips(tableId, seatNo, currentChips));
 
   overlay.classList.add('show');
   setTimeout(() => document.getElementById('chipInput').focus(), 100);
@@ -463,10 +492,17 @@ function addPlayerPrompt(tableId, seatNo) {
       <span style="font-size:1.4rem">키 플레이어로 등록</span>
     </label>
     <div class="overlayActions">
-      <button class="btnCancel" onclick="closeOverlay()">취소</button>
-      <button class="btnConfirm" onclick="confirmAddPlayer('${tableId}', '${seatNo}')">추가</button>
+      <button class="btnCancel">취소</button>
+      <button class="btnConfirm">추가</button>
     </div>
   `;
+
+  // 이벤트 안전하게 연결
+  const btnCancel = content.querySelector('.btnCancel');
+  const btnConfirm = content.querySelector('.btnConfirm');
+
+  btnCancel.addEventListener('click', closeOverlay);
+  btnConfirm.addEventListener('click', () => confirmAddPlayer(tableId, seatNo));
 
   overlay.classList.add('show');
   setTimeout(() => document.getElementById('nameInput').focus(), 100);
@@ -551,8 +587,6 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
   const overlay = document.getElementById('overlay');
   const content = document.getElementById('overlayContent');
 
-  const safeName = playerName.replace(/'/g, "\\'");
-
   content.innerHTML = `
     <div class="overlayTitle">📷 ${playerName} 사진 편집</div>
     <input type="text" id="photoUrlInput" class="overlayInput" placeholder="https://i.imgur.com/abc123.jpg" value="${currentPhotoUrl}">
@@ -560,10 +594,17 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
       💡 <a href="https://imgur.com/" target="_blank" style="color: #2a6fff;">Imgur</a>에 사진 업로드 후 HTTPS URL 입력
     </div>
     <div class="overlayActions">
-      <button class="btnCancel" onclick="closeOverlay()">취소</button>
-      <button class="btnConfirm" onclick="confirmPhotoEdit('${safeName}')">저장</button>
+      <button class="btnCancel">취소</button>
+      <button class="btnConfirm">저장</button>
     </div>
   `;
+
+  // 이벤트 안전하게 연결
+  const btnCancel = content.querySelector('.btnCancel');
+  const btnConfirm = content.querySelector('.btnConfirm');
+
+  btnCancel.addEventListener('click', closeOverlay);
+  btnConfirm.addEventListener('click', () => confirmPhotoEdit(playerName));
 
   overlay.classList.add('show');
 
