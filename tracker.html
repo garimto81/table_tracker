@@ -751,21 +751,42 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
   input.placeholder = 'https://i.imgur.com/abc123.jpg';
   input.value = currentPhotoUrl;
 
+  // Phase 3.2: 사진 촬영 버튼 추가
+  const photoTakeBtn = document.createElement('button');
+  photoTakeBtn.className = 'btnTakePhoto';
+  photoTakeBtn.textContent = '📷 사진 촬영';
+  photoTakeBtn.style.width = '100%';
+  photoTakeBtn.style.background = '#16a34a';
+  photoTakeBtn.style.border = '1px solid #16a34a';
+  photoTakeBtn.style.color = '#fff';
+  photoTakeBtn.style.borderRadius = 'var(--sp-sm)';
+  photoTakeBtn.style.padding = 'var(--sp-lg)';
+  photoTakeBtn.style.fontSize = '1.4rem';
+  photoTakeBtn.style.cursor = 'pointer';
+  photoTakeBtn.style.fontWeight = '700';
+  photoTakeBtn.style.marginBottom = 'var(--sp-md)';
+  photoTakeBtn.style.minHeight = '56px';
+
+  const photoFileInput = document.createElement('input');
+  photoFileInput.type = 'file';
+  photoFileInput.accept = 'image/*';
+  photoFileInput.capture = 'environment'; // 후면 카메라
+  photoFileInput.style.display = 'none';
+
+  photoTakeBtn.addEventListener('click', () => {
+    photoFileInput.click();
+  });
+
+  photoFileInput.addEventListener('change', (e) => {
+    handlePhotoCapture(e, playerName);
+  });
+
   const hint = document.createElement('div');
   hint.style.fontSize = '1.1rem';
   hint.style.color = '#9aa3b2';
   hint.style.marginTop = '-8px';
   hint.style.marginBottom = '12px';
-  hint.textContent = '💡 ';
-
-  const imgurLink = document.createElement('a');
-  imgurLink.href = 'https://imgur.com/';
-  imgurLink.target = '_blank';
-  imgurLink.style.color = '#2a6fff';
-  imgurLink.textContent = 'Imgur';
-
-  hint.appendChild(imgurLink);
-  hint.appendChild(document.createTextNode('에 사진 업로드 후 HTTPS URL 입력'));
+  hint.textContent = '또는 URL 직접 입력:';
 
   const actions = document.createElement('div');
   actions.className = 'overlayActions';
@@ -784,8 +805,10 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
   actions.appendChild(btnConfirm);
 
   content.appendChild(title);
-  content.appendChild(input);
+  content.appendChild(photoTakeBtn);
+  content.appendChild(photoFileInput);
   content.appendChild(hint);
+  content.appendChild(input);
   content.appendChild(actions);
 
   overlay.classList.add('show');
@@ -933,6 +956,63 @@ function saveChipHistory(tableId, seatNo, chips) {
   const history = JSON.parse(localStorage.getItem('phl_chipHistory') || '{}');
   history[key] = chips;
   localStorage.setItem('phl_chipHistory', JSON.stringify(history));
+}
+
+/* ===== Photo Capture Handler (Phase 3.2) ===== */
+/**
+ * 사진 촬영 후 Imgur 업로드 처리
+ * @param {Event} e - File input change event
+ * @param {string} playerName - 플레이어 이름
+ */
+function handlePhotoCapture(e, playerName) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // 파일 타입 검증
+  if (!file.type.startsWith('image/')) {
+    alert('이미지 파일만 업로드 가능합니다.');
+    return;
+  }
+
+  // 파일 크기 제한 (5MB)
+  const MAX_SIZE = 5 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    alert('사진 크기는 5MB 이하여야 합니다.\n현재: ' + Math.round(file.size / 1024 / 1024) + 'MB');
+    return;
+  }
+
+  showLoading('사진 업로드 중...');
+
+  const reader = new FileReader();
+  reader.onload = function() {
+    // Base64 인코딩 (data:image/jpeg;base64, 제거)
+    const base64 = reader.result.split(',')[1];
+
+    google.script.run
+      .withSuccessHandler(response => {
+        hideLoading();
+
+        if (response.success) {
+          const input = document.getElementById('photoUrlInput');
+          input.value = response.data.imgurUrl;
+          alert('사진 업로드 완료!\nURL이 자동으로 입력되었습니다.');
+        } else {
+          alert('업로드 실패: ' + (response.error?.message || '알 수 없는 오류'));
+        }
+      })
+      .withFailureHandler(err => {
+        hideLoading();
+        alert('에러: ' + err.message);
+      })
+      .uploadToImgur(playerName, base64);
+  };
+
+  reader.onerror = function() {
+    hideLoading();
+    alert('파일 읽기 실패');
+  };
+
+  reader.readAsDataURL(file);
 }
 
 function closeOverlay() {

@@ -28,6 +28,11 @@ const MAX_SEATS_PER_TABLE = 9;
 const CACHE_TTL = 1000; // 1초
 const MAX_LOCK_WAIT = 10000; // 10초
 
+/* ===== Imgur API 설정 (Phase 3.2) ===== */
+// TODO: Imgur Client ID를 발급받아 여기에 입력하세요
+// https://api.imgur.com/oauth2/addclient
+const IMGUR_CLIENT_ID = 'YOUR_CLIENT_ID_HERE';
+
 /* ===== 로깅 ===== */
 const LOG_LEVEL = { ERROR: 0, WARN: 1, INFO: 2, DEBUG: 3 };
 const CURRENT_LOG_LEVEL = LOG_LEVEL.INFO;
@@ -314,7 +319,82 @@ function errorResponse_(functionName, error) {
   };
 }
 
-/* ===== 플레이어 사진 관리 (Phase 3.1 - Type 시트 N열) ===== */
+/* ===== 플레이어 사진 관리 (Phase 3.1-3.2) ===== */
+
+/**
+ * Imgur에 이미지 업로드 (Anonymous Upload API)
+ * @param {string} playerName - 플레이어 이름 (메타데이터용)
+ * @param {string} base64Image - Base64 인코딩된 이미지 데이터
+ * @return {Object} 업로드 결과 {success, data: {imgurUrl}}
+ */
+function uploadToImgur(playerName, base64Image) {
+  return withScriptLock_(() => {
+    try {
+      log_(LOG_LEVEL.INFO, 'uploadToImgur', '이미지 업로드 시작', { playerName });
+
+      // Client ID 검증
+      if (!IMGUR_CLIENT_ID || IMGUR_CLIENT_ID === 'YOUR_CLIENT_ID_HERE') {
+        throw new Error('Imgur Client ID가 설정되지 않았습니다. tracker_gs.js의 IMGUR_CLIENT_ID를 설정하세요.');
+      }
+
+      // Base64 검증
+      if (!base64Image || base64Image.length < 100) {
+        throw new Error('유효하지 않은 이미지 데이터입니다.');
+      }
+
+      // Imgur API 호출
+      const response = UrlFetchApp.fetch('https://api.imgur.com/3/image', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Client-ID ' + IMGUR_CLIENT_ID
+        },
+        payload: {
+          image: base64Image,
+          type: 'base64',
+          name: playerName,
+          title: playerName + ' - Poker Tracker'
+        },
+        muteHttpExceptions: true
+      });
+
+      const statusCode = response.getResponseCode();
+      const json = JSON.parse(response.getContentText());
+
+      log_(LOG_LEVEL.INFO, 'uploadToImgur', 'Imgur API 응답', {
+        statusCode,
+        success: json.success
+      });
+
+      if (statusCode !== 200 || !json.success) {
+        const errorMsg = json.data && json.data.error
+          ? json.data.error
+          : 'Imgur 업로드 실패';
+        throw new Error(errorMsg);
+      }
+
+      const imgurUrl = json.data.link; // https://i.imgur.com/abc123.jpg
+      const deleteHash = json.data.deletehash; // 삭제용 (옵션)
+
+      log_(LOG_LEVEL.INFO, 'uploadToImgur', '업로드 완료', { imgurUrl });
+
+      // Type 시트에 자동 저장
+      const updateResult = updateKeyPlayerPhoto(playerName, imgurUrl);
+
+      if (!updateResult.success) {
+        log_(LOG_LEVEL.WARN, 'uploadToImgur', 'URL 저장 실패', updateResult.error);
+      }
+
+      return successResponse_({
+        imgurUrl,
+        deleteHash,
+        saved: updateResult.success
+      });
+
+    } catch (e) {
+      return errorResponse_('uploadToImgur', e);
+    }
+  });
+}
 
 /**
  * Type 시트 N열에 사진 URL 업데이트
