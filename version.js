@@ -2,29 +2,29 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.3.0',
-  name: 'Player Move Feature',
+  current: 'v3.3.1',
+  name: 'Move Button to Key Player View',
   date: '2025-10-14',
-  phase: '3.3.0',
+  phase: '3.3.1',
   changes: [
-    '🔀 플레이어 이동 기능 추가 (테이블/좌석 변경)',
-    '📝 목적지 덮어쓰기 지원 (중복 방지)',
-    '🔒 원자적 트랜잭션 (ScriptLock)',
-    '🎨 [🔀] 이동 버튼 추가 (Table View)',
-    '⚠️ 덮어쓰기 경고 메시지'
+    '🔀 키 플레이어 뷰에 이동 버튼 추가',
+    '🎨 [📷 사진] + [🔀 이동] 버튼 가로 배치',
+    '🐛 오버레이 표시 버그 수정 (.active → .show)',
+    '📋 label htmlFor 속성 추가 (접근성 개선)',
+    '🔍 디버깅 로그 추가 (console.log)'
   ],
   deployment: {
-    id: '@19',
-    description: 'v3.3.0 - Player move feature with overwrite',
+    id: '@22',
+    description: 'v3.3.1 - Move button in key player view',
     url: 'https://script.google.com/macros/s/AKfycbymegRGKIgLU_CdcORyMRRSBe1J5aunP1Bcs3--BKMQn1hJZh-fcZJgMNhs8CiZvu6tag/exec',
     scriptId: '17reWlyDY3W3aBsK9VYTnJ1C3iXnWhmzxOHJ-_s54S9QYje3COrwId38O',
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
   },
   files: {
     'tracker_gs.js': 'v3.3.0',
-    'tracker.html': 'v3.3.0',
+    'tracker.html': 'v3.3.1',
     'appsscript.json': 'v3.2.0',
-    'docs/CHANGELOG.md': 'v3.3.0',
+    'docs/CHANGELOG.md': 'v3.3.1',
     'docs/STATUS.md': 'v3.1.0',
     'docs/PRD.md': 'v3.1.0',
     'docs/LLD.md': 'v2.4.0',
@@ -36,12 +36,12 @@ const VERSION = {
   },
   status: {
     state: '✅ 배포 완료',
-    phase: 'Phase 3.3.0 (플레이어 이동)',
+    phase: 'Phase 3.3.1 (키 플레이어 이동 버튼)',
     blockers: [],
     lastCompleted: [
+      '✅ 키 플레이어 뷰 이동 버튼 추가 (v3.3.1)',
       '✅ 플레이어 이동 기능 (v3.3.0)',
-      '✅ 사진 업로드 UX 개선 (v3.2.1)',
-      '✅ 스마트폰 사진 촬영 자동 업로드 (v3.2.0)'
+      '✅ 사진 업로드 UX 개선 (v3.2.1)'
     ]
   },
   next: {

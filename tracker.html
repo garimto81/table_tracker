@@ -334,13 +334,27 @@ function renderKeyPlayers(players) {
     playerMeta.appendChild(countrySpan);
     playerMeta.appendChild(chipsSpan);
 
+    const btnContainer = document.createElement('div');
+    btnContainer.style.display = 'flex';
+    btnContainer.style.gap = 'var(--sp-xs)';
+    btnContainer.style.marginTop = 'var(--sp-xs)';
+
     const photoEditBtn = document.createElement('button');
     photoEditBtn.className = 'photoEditBtn';
-    photoEditBtn.textContent = '📷 사진 편집';
+    photoEditBtn.textContent = '📷 사진';
+
+    const moveBtn = document.createElement('button');
+    moveBtn.className = 'photoEditBtn';
+    moveBtn.textContent = '🔀 이동';
+    moveBtn.style.borderColor = '#f59e0b';
+    moveBtn.style.color = '#f59e0b';
+
+    btnContainer.appendChild(photoEditBtn);
+    btnContainer.appendChild(moveBtn);
 
     playerDetails.appendChild(playerName);
     playerDetails.appendChild(playerMeta);
-    playerDetails.appendChild(photoEditBtn);
+    playerDetails.appendChild(btnContainer);
 
     card.appendChild(roomInfo);
     card.appendChild(photoContainer);
@@ -353,6 +367,12 @@ function renderKeyPlayers(players) {
     photoEditBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       editPlayerPhoto(p.playerName, p.photoUrl || '');
+    });
+
+    // 이동 버튼 이벤트 (movePlayerPrompt 재사용)
+    moveBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      movePlayerPrompt(p.tableNo, p.seatNo, p.playerName);
     });
 
     if (p.photoUrl && p.photoUrl.trim()) {
@@ -764,8 +784,16 @@ function deletePlayerConfirm(tableId, seatNo, playerName) {
 
 /* ===== Move Player (Phase 3.3) ===== */
 function movePlayerPrompt(tableId, seatNo, playerName) {
+  console.log('🔀 movePlayerPrompt 호출:', { tableId, seatNo, playerName });
+
   const overlay = document.getElementById('overlay');
   const content = document.getElementById('overlayContent');
+
+  if (!overlay || !content) {
+    console.error('❌ 오버레이 요소를 찾을 수 없습니다.');
+    alert('오버레이 요소를 찾을 수 없습니다. 페이지를 새로고침하세요.');
+    return;
+  }
 
   content.innerHTML = '';
 
@@ -780,6 +808,7 @@ function movePlayerPrompt(tableId, seatNo, playerName) {
   currentInfo.textContent = '현재: T' + tableId + ' S' + seatNo;
 
   const labelTable = document.createElement('label');
+  labelTable.htmlFor = 'moveToTable';
   labelTable.textContent = '목적지 테이블 번호';
   labelTable.style.display = 'block';
   labelTable.style.marginBottom = 'var(--sp-xs)';
@@ -796,6 +825,7 @@ function movePlayerPrompt(tableId, seatNo, playerName) {
   inputTable.value = tableId; // 기본값: 현재 테이블
 
   const labelSeat = document.createElement('label');
+  labelSeat.htmlFor = 'moveToSeat';
   labelSeat.textContent = '목적지 좌석 번호';
   labelSeat.style.display = 'block';
   labelSeat.style.marginTop = 'var(--sp-md)';
@@ -818,15 +848,21 @@ function movePlayerPrompt(tableId, seatNo, playerName) {
   warningText.style.marginBottom = 'var(--sp-md)';
   warningText.textContent = '⚠️ 목적지에 플레이어가 있으면 덮어씁니다.';
 
+  const actions = document.createElement('div');
+  actions.className = 'overlayActions';
+
+  const btnCancel = document.createElement('button');
+  btnCancel.className = 'btnCancel';
+  btnCancel.textContent = '취소';
+  btnCancel.onclick = closeOverlay;
+
   const btnConfirm = document.createElement('button');
-  btnConfirm.className = 'btnPrimary';
+  btnConfirm.className = 'btnConfirm';
   btnConfirm.textContent = '이동';
   btnConfirm.onclick = () => confirmMovePlayer(tableId, seatNo, playerName);
 
-  const btnCancel = document.createElement('button');
-  btnCancel.className = 'btnSecondary';
-  btnCancel.textContent = '취소';
-  btnCancel.onclick = closeOverlay;
+  actions.appendChild(btnCancel);
+  actions.appendChild(btnConfirm);
 
   content.appendChild(title);
   content.appendChild(currentInfo);
@@ -835,16 +871,20 @@ function movePlayerPrompt(tableId, seatNo, playerName) {
   content.appendChild(labelSeat);
   content.appendChild(inputSeat);
   content.appendChild(warningText);
-  content.appendChild(btnConfirm);
-  content.appendChild(btnCancel);
+  content.appendChild(actions);
 
-  overlay.classList.add('active');
-  inputTable.focus();
+  overlay.classList.add('show');
+  console.log('✅ 오버레이 표시 완료');
+  setTimeout(() => inputTable.focus(), 100);
 }
 
 function confirmMovePlayer(fromTableNo, fromSeatNo, playerName) {
+  console.log('🔀 confirmMovePlayer 호출:', { fromTableNo, fromSeatNo, playerName });
+
   const toTableNo = parseInt(document.getElementById('moveToTable').value);
   const toSeatNo = parseInt(document.getElementById('moveToSeat').value);
+
+  console.log('📍 목적지:', { toTableNo, toSeatNo });
 
   if (!toTableNo || toTableNo < 1) {
     alert('목적지 테이블 번호를 입력하세요.');
@@ -864,10 +904,15 @@ function confirmMovePlayer(fromTableNo, fromSeatNo, playerName) {
   closeOverlay();
   showLoading();
 
+  console.log('🚀 movePlayer 서버 함수 호출 시작');
+
   google.script.run
     .withSuccessHandler(response => {
+      console.log('✅ movePlayer 서버 응답:', response);
       hideLoading();
+
       if (!response.success) {
+        console.error('❌ 이동 실패:', response.error);
         alert('에러: ' + (response.error?.message || '플레이어 이동 실패'));
         return;
       }
@@ -882,6 +927,7 @@ function confirmMovePlayer(fromTableNo, fromSeatNo, playerName) {
       }
     })
     .withFailureHandler(err => {
+      console.error('❌ movePlayer 서버 에러:', err);
       hideLoading();
       alert('에러: ' + err.message);
     })

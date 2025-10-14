@@ -2,6 +2,60 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.3.1 (2025-10-14) - Move Button to Key Player View 🔀
+
+### ✨ 신규 기능
+**키 플레이어 뷰에 이동 버튼 추가**:
+- 키 플레이어 카드에 [🔀 이동] 버튼 추가
+- [📷 사진] + [🔀 이동] 2개 버튼 가로 배치 (flexbox)
+- `movePlayerPrompt()` 함수 재사용 (Table View와 동일한 UX)
+
+### 🎨 UI 개선
+**버튼 레이아웃**:
+- 버튼 컨테이너: `display: flex`, `gap: var(--sp-xs)`
+- [📷 사진]: 회색 테두리 (기존 `photoEditBtn` 스타일)
+- [🔀 이동]: 주황색 테두리 + 텍스트 (`#f59e0b`)
+
+**이동 오버레이 개선**:
+- `e.stopPropagation()`: 카드 클릭 이벤트 차단
+- 이동 완료 후 키 플레이어 목록 자동 새로고침
+
+### 🐛 버그 수정
+**오버레이 표시 버그**:
+- 문제: `overlay.classList.add('active')` → CSS는 `.show` 클래스 사용
+- 수정: `overlay.classList.add('show')`로 변경
+- 영향: 이동 버튼 클릭 시 오버레이가 표시되지 않던 문제 해결
+
+**접근성 개선**:
+- `<label htmlFor="moveToTable">` 속성 추가
+- `<label htmlFor="moveToSeat">` 속성 추가
+- 스크린 리더 호환성 향상
+
+### 🔍 디버깅
+**Console 로그 추가**:
+- `🔀 movePlayerPrompt 호출:` - 함수 호출 확인
+- `✅ 오버레이 표시 완료` - 오버레이 표시 확인
+- `📍 목적지:` - 입력값 확인
+- `🚀 movePlayer 서버 함수 호출 시작` - 서버 호출 확인
+- `✅ movePlayer 서버 응답:` - 서버 응답 확인
+- `❌ 이동 실패:` / `❌ movePlayer 서버 에러:` - 에러 확인
+
+### 📊 사용 시나리오
+**키 플레이어 뷰**:
+1. 키 플레이어 카드의 [🔀 이동] 클릭
+2. 목적지 테이블/좌석 입력
+3. [이동] → 성공 메시지 + 키 플레이어 목록 새로고침
+
+**Table View** (기존):
+1. 플레이어 카드의 [🔀] 클릭
+2. 동일한 흐름
+
+### 📦 배포
+- clasp push 완료 (5 files)
+- 배포 ID: @22
+
+---
+
 ## v3.3.0 (2025-10-14) - Player Move Feature 🔀
 
 ### ✨ 신규 기능
