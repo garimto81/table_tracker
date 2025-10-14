@@ -60,6 +60,8 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
 .keyStar{color:#fbbf24;font-size:1.56rem;margin-left:6px}
 .emptySeat{flex:1;color:var(--muted);font-style:italic;font-size:1.43rem}
 .addBtn{background:#223266;border:1px solid var(--acc);color:var(--acc);border-radius:var(--sp-sm);padding:var(--sp-sm) var(--sp-lg);font-size:1.3rem;cursor:pointer}
+.moveBtn{background:transparent;border:none;font-size:1.6rem;cursor:pointer;padding:var(--sp-sm);color:#f59e0b;transition:transform .2s}
+.moveBtn:hover{transform:scale(1.2)}
 .deleteBtn{background:transparent;border:none;font-size:1.82rem;cursor:pointer;padding:var(--sp-sm)}
 
 /* === Overlay === */
@@ -490,6 +492,14 @@ function renderTablePlayers(tableId, players) {
         editChips(tableId, p.seatNo, p.chipCount, p.playerName);
       });
 
+      const moveBtn = document.createElement('button');
+      moveBtn.className = 'moveBtn';
+      moveBtn.textContent = '🔀';
+      moveBtn.title = '플레이어 이동';
+      moveBtn.addEventListener('click', () => {
+        movePlayerPrompt(tableId, p.seatNo, p.playerName);
+      });
+
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'deleteBtn';
       deleteBtn.textContent = '🗑️';
@@ -501,6 +511,7 @@ function renderTablePlayers(tableId, players) {
       row.appendChild(name);
       row.appendChild(flag);
       row.appendChild(chips);
+      row.appendChild(moveBtn);
       row.appendChild(deleteBtn);
     }
 
@@ -749,6 +760,132 @@ function deletePlayerConfirm(tableId, seatNo, playerName) {
       hideLoading();
     })
     .removePlayer(tableId, seatNo);
+}
+
+/* ===== Move Player (Phase 3.3) ===== */
+function movePlayerPrompt(tableId, seatNo, playerName) {
+  const overlay = document.getElementById('overlay');
+  const content = document.getElementById('overlayContent');
+
+  content.innerHTML = '';
+
+  const title = document.createElement('div');
+  title.className = 'overlayTitle';
+  title.textContent = '🔀 ' + playerName + ' 이동';
+
+  const currentInfo = document.createElement('div');
+  currentInfo.style.fontSize = '1.2rem';
+  currentInfo.style.color = 'var(--muted)';
+  currentInfo.style.marginBottom = 'var(--sp-lg)';
+  currentInfo.textContent = '현재: T' + tableId + ' S' + seatNo;
+
+  const labelTable = document.createElement('label');
+  labelTable.textContent = '목적지 테이블 번호';
+  labelTable.style.display = 'block';
+  labelTable.style.marginBottom = 'var(--sp-xs)';
+  labelTable.style.fontSize = '1.4rem';
+  labelTable.style.fontWeight = '600';
+
+  const inputTable = document.createElement('input');
+  inputTable.type = 'number';
+  inputTable.id = 'moveToTable';
+  inputTable.className = 'overlayInput';
+  inputTable.placeholder = '예: 15';
+  inputTable.min = '1';
+  inputTable.max = '999';
+  inputTable.value = tableId; // 기본값: 현재 테이블
+
+  const labelSeat = document.createElement('label');
+  labelSeat.textContent = '목적지 좌석 번호';
+  labelSeat.style.display = 'block';
+  labelSeat.style.marginTop = 'var(--sp-md)';
+  labelSeat.style.marginBottom = 'var(--sp-xs)';
+  labelSeat.style.fontSize = '1.4rem';
+  labelSeat.style.fontWeight = '600';
+
+  const inputSeat = document.createElement('input');
+  inputSeat.type = 'number';
+  inputSeat.id = 'moveToSeat';
+  inputSeat.className = 'overlayInput';
+  inputSeat.placeholder = '예: 3';
+  inputSeat.min = '1';
+  inputSeat.max = '9';
+
+  const warningText = document.createElement('div');
+  warningText.style.fontSize = '1.2rem';
+  warningText.style.color = '#f59e0b';
+  warningText.style.marginTop = 'var(--sp-md)';
+  warningText.style.marginBottom = 'var(--sp-md)';
+  warningText.textContent = '⚠️ 목적지에 플레이어가 있으면 덮어씁니다.';
+
+  const btnConfirm = document.createElement('button');
+  btnConfirm.className = 'btnPrimary';
+  btnConfirm.textContent = '이동';
+  btnConfirm.onclick = () => confirmMovePlayer(tableId, seatNo, playerName);
+
+  const btnCancel = document.createElement('button');
+  btnCancel.className = 'btnSecondary';
+  btnCancel.textContent = '취소';
+  btnCancel.onclick = closeOverlay;
+
+  content.appendChild(title);
+  content.appendChild(currentInfo);
+  content.appendChild(labelTable);
+  content.appendChild(inputTable);
+  content.appendChild(labelSeat);
+  content.appendChild(inputSeat);
+  content.appendChild(warningText);
+  content.appendChild(btnConfirm);
+  content.appendChild(btnCancel);
+
+  overlay.classList.add('active');
+  inputTable.focus();
+}
+
+function confirmMovePlayer(fromTableNo, fromSeatNo, playerName) {
+  const toTableNo = parseInt(document.getElementById('moveToTable').value);
+  const toSeatNo = parseInt(document.getElementById('moveToSeat').value);
+
+  if (!toTableNo || toTableNo < 1) {
+    alert('목적지 테이블 번호를 입력하세요.');
+    return;
+  }
+
+  if (!toSeatNo || toSeatNo < 1 || toSeatNo > 9) {
+    alert('목적지 좌석 번호를 1-9 사이로 입력하세요.');
+    return;
+  }
+
+  if (fromTableNo === toTableNo && fromSeatNo === toSeatNo) {
+    alert('출발지와 목적지가 동일합니다.');
+    return;
+  }
+
+  closeOverlay();
+  showLoading();
+
+  google.script.run
+    .withSuccessHandler(response => {
+      hideLoading();
+      if (!response.success) {
+        alert('에러: ' + (response.error?.message || '플레이어 이동 실패'));
+        return;
+      }
+
+      alert('✅ ' + playerName + '를 T' + toTableNo + ' S' + toSeatNo + '로 이동했습니다.');
+
+      // 현재 뷰 새로고침
+      if (currentView === 'key') {
+        loadKeyPlayers();
+      } else {
+        loadTablePlayers(currentTableId);
+      }
+    })
+    .withFailureHandler(err => {
+      hideLoading();
+      alert('에러: ' + err.message);
+    })
+    .movePlayer(fromTableNo, fromSeatNo, toTableNo, toSeatNo);
 }
 
 /* ===== Player Photo Edit (Phase 3.1) ===== */

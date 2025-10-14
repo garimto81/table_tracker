@@ -710,6 +710,133 @@ function removePlayer(tableId, seatNo) {
 }
 
 /**
+ * 플레이어 이동 (테이블/좌석 변경)
+ * @param {number} fromTableNo - 출발지 테이블 번호
+ * @param {number} fromSeatNo - 출발지 좌석 번호
+ * @param {number} toTableNo - 목적지 테이블 번호
+ * @param {number} toSeatNo - 목적지 좌석 번호
+ * @return {Object} 성공/실패 응답
+ */
+function movePlayer(fromTableNo, fromSeatNo, toTableNo, toSeatNo) {
+  return withScriptLock_(() => {
+    try {
+      log_(LOG_LEVEL.INFO, 'movePlayer', '플레이어 이동 시작', {
+        from: `T${fromTableNo} S${fromSeatNo}`,
+        to: `T${toTableNo} S${toSeatNo}`
+      });
+
+      // 검증
+      const validFromTableNo = toInt_(fromTableNo);
+      const validFromSeatNo = toInt_(fromSeatNo);
+      const validToTableNo = toInt_(toTableNo);
+      const validToSeatNo = toInt_(toSeatNo);
+
+      if (validFromTableNo <= 0 || validFromSeatNo <= 0) {
+        throw new Error('출발지 테이블/좌석 번호가 유효하지 않습니다.');
+      }
+
+      if (validToTableNo <= 0 || validToSeatNo <= 0) {
+        throw new Error('목적지 테이블/좌석 번호가 유효하지 않습니다.');
+      }
+
+      if (validFromTableNo === validToTableNo && validFromSeatNo === validToSeatNo) {
+        throw new Error('출발지와 목적지가 동일합니다.');
+      }
+
+      const { sh, data, cols } = getSheetData_(true);
+
+      // 1. 출발지 플레이어 존재 확인
+      const fromRowIndex = findPlayerRow_(data, cols, validFromTableNo, validFromSeatNo);
+      if (fromRowIndex === -1) {
+        throw new Error('출발지에 플레이어가 없습니다.');
+      }
+
+      // 2. 출발지 플레이어 데이터 읽기
+      const fromRow = data.rows[fromRowIndex];
+      const playerData = {
+        pokerRoom: cols.pokerRoom !== -1 ? fromRow[cols.pokerRoom] : 'Main',
+        tableName: cols.tableName !== -1 ? fromRow[cols.tableName] : 'Black',
+        tableId: cols.tableId !== -1 ? fromRow[cols.tableId] : 0,
+        seatId: cols.seatId !== -1 ? fromRow[cols.seatId] : 0,
+        playerId: cols.playerId !== -1 ? fromRow[cols.playerId] : 0,
+        playerName: cols.playerName !== -1 ? fromRow[cols.playerName] : '',
+        nationality: cols.nationality !== -1 ? fromRow[cols.nationality] : '',
+        chipCount: cols.chipCount !== -1 ? fromRow[cols.chipCount] : 0,
+        keyplayer: fromRow[cols.keyplayer],
+        photoUrl: cols.photoUrl !== -1 ? fromRow[cols.photoUrl] : ''
+      };
+
+      // 3. 목적지에 플레이어 있으면 삭제 (덮어쓰기)
+      const toRowIndex = findPlayerRow_(data, cols, validToTableNo, validToSeatNo);
+      if (toRowIndex !== -1) {
+        const toActualRow = toRowIndex + 2;
+        sh.deleteRow(toActualRow);
+
+        // 데이터 다시 읽기 (행 삭제 후 인덱스 변경됨)
+        const refreshedData = getSheetData_(true);
+        const newFromRowIndex = findPlayerRow_(refreshedData.data, refreshedData.cols, validFromTableNo, validFromSeatNo);
+
+        if (newFromRowIndex === -1) {
+          throw new Error('출발지 플레이어를 다시 찾을 수 없습니다.');
+        }
+
+        // 4. 출발지 행 삭제
+        const fromActualRow = newFromRowIndex + 2;
+        sh.deleteRow(fromActualRow);
+      } else {
+        // 목적지가 비어있으면 바로 출발지 삭제
+        const fromActualRow = fromRowIndex + 2;
+        sh.deleteRow(fromActualRow);
+      }
+
+      // 5. 목적지에 새 데이터 쓰기
+      const newRow = new Array(data.header.length).fill('');
+      if (cols.pokerRoom !== -1) newRow[cols.pokerRoom] = playerData.pokerRoom;
+      if (cols.tableName !== -1) newRow[cols.tableName] = playerData.tableName;
+      if (cols.tableId !== -1) newRow[cols.tableId] = playerData.tableId;
+      if (cols.tableNo !== -1) newRow[cols.tableNo] = validToTableNo; // 목적지 테이블
+      if (cols.seatId !== -1) newRow[cols.seatId] = playerData.seatId;
+      if (cols.seatNo !== -1) newRow[cols.seatNo] = validToSeatNo; // 목적지 좌석
+      if (cols.playerId !== -1) newRow[cols.playerId] = playerData.playerId;
+      if (cols.playerName !== -1) newRow[cols.playerName] = playerData.playerName;
+      if (cols.nationality !== -1) newRow[cols.nationality] = playerData.nationality;
+      if (cols.chipCount !== -1) newRow[cols.chipCount] = playerData.chipCount;
+      newRow[cols.keyplayer] = playerData.keyplayer;
+      if (cols.photoUrl !== -1) newRow[cols.photoUrl] = playerData.photoUrl;
+
+      sh.appendRow(newRow);
+
+      // 6. 자동 정렬
+      const lastRow = sh.getLastRow();
+      if (lastRow > 1) {
+        const sortRange = sh.getRange(2, 1, lastRow - 1, sh.getLastColumn());
+        sortRange.sort([
+          {column: cols.pokerRoom + 1, ascending: true},
+          {column: cols.tableName + 1, ascending: true},
+          {column: cols.tableNo + 1, ascending: true},
+          {column: cols.seatNo + 1, ascending: true}
+        ]);
+      }
+
+      invalidateCache_();
+
+      log_(LOG_LEVEL.INFO, 'movePlayer', '플레이어 이동 완료', {
+        playerName: playerData.playerName
+      });
+
+      return successResponse_({
+        playerName: playerData.playerName,
+        from: { tableNo: validFromTableNo, seatNo: validFromSeatNo },
+        to: { tableNo: validToTableNo, seatNo: validToSeatNo }
+      });
+
+    } catch (e) {
+      return errorResponse_('movePlayer', e);
+    }
+  });
+}
+
+/**
  * 배치 칩 업데이트 (최적화)
  */
 function batchUpdateChips(updates) {
