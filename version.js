@@ -2,16 +2,16 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.1.0',
-  name: 'Player Photo Feature',
-  date: '2025-10-13',
-  phase: '3.1',
+  current: 'v3.1.1',
+  name: 'Photo Storage Refactoring',
+  date: '2025-10-14',
+  phase: '3.1.1',
   changes: [
-    'KeyPlayers 시트 추가 (PlayerName, PhotoURL 2컬럼)',
-    '96px 사진 + 프로 디자인 UI 구현',
-    '국가 이름 매핑 40개국 (KR → South Korea)',
-    '사진 편집 팝업 구현 (Imgur URL 입력)',
-    'getKeyPlayers() photoUrl 필드 JOIN 추가'
+    'KeyPlayers 시트 제거 → Type 시트 N열로 통합',
+    'updateKeyPlayerPhoto() 단순화 (Type N열 직접 쓰기)',
+    'getKeyPlayers() JOIN 제거 (N열 직접 읽기)',
+    'migrateKeyPlayersToTypeSheetN() 마이그레이션 함수 추가',
+    'invalidateCache_() 호출 추가 (사진 업데이트 시)'
   ],
   deployment: {
     id: '@12',
@@ -21,10 +21,10 @@ const VERSION = {
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
   },
   files: {
-    'tracker_gs.js': 'v3.1.0',
+    'tracker_gs.js': 'v3.1.1',
     'tracker.html': 'v3.1.0',
     'docs/STATUS.md': 'v3.1.0',
-    'docs/CHANGELOG.md': 'v3.1.0',
+    'docs/CHANGELOG.md': 'v3.1.1',
     'docs/PRD.md': 'v3.1.0',
     'docs/LLD.md': 'v2.4.0',
     'docs/PLAN.md': 'v2.4.0',
@@ -34,16 +34,17 @@ const VERSION = {
     'ROLLBACK_INFO.md': 'v3.0.1'
   },
   status: {
-    state: '✅ 배포 준비 완료',
-    phase: 'Phase 3.1 (100% 완료)',
+    state: '⚠️ 마이그레이션 필요',
+    phase: 'Phase 3.1.1 (코드 완료, 배포 전)',
     blockers: [
-      '⚠️ 웹앱 배포 후 사진 표시 확인 필요',
-      '⚠️ KeyPlayers 시트 자동 생성 확인 필요'
+      '⚠️ migrateKeyPlayersToTypeSheetN() 실행 필요',
+      '⚠️ Type 시트 N열 헤더 "PhotoURL" 확인 필요',
+      '⚠️ 웹앱 배포 후 사진 표시 확인 필요'
     ],
     lastCompleted: [
+      '✅ KeyPlayers → Type N열 리팩토링 (v3.1.1)',
       '✅ 플레이어 사진 기능 추가 (v3.1.0)',
-      '✅ Keyplayer 컬럼 인덱스 고정 (v3.0.1)',
-      '✅ Seats.csv 구조 마이그레이션 (v3.0.0)'
+      '✅ Keyplayer 컬럼 인덱스 고정 (v3.0.1)'
     ]
   },
   next: {

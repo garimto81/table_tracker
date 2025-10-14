@@ -24,7 +24,6 @@ try {
 
 /* ===== 설정 ===== */
 const TYPE_SHEET_NAME = 'Type';
-const KEYPLAYERS_SHEET_NAME = 'KeyPlayers';
 const MAX_SEATS_PER_TABLE = 9;
 const CACHE_TTL = 1000; // 1초
 const MAX_LOCK_WAIT = 10000; // 10초
@@ -204,8 +203,9 @@ function getSheetData_(forceRefresh = false) {
 
   const data = readAll_Optimized_(sh);
 
-  // Seats.csv 기반 구조 (11개 컬럼)
+  // Seats.csv 기반 구조 (14개 컬럼) + Phase 3.1 PhotoURL
   // K열 Keyplayer는 헤더 무관하게 인덱스 10으로 고정
+  // N열 PhotoURL은 헤더 무관하게 인덱스 13으로 고정
   const cols = {
     pokerRoom: findColIndex_(data.header, ['PokerRoom', 'Poker Room', 'poker_room']),
     tableName: findColIndex_(data.header, ['TableName', 'Table Name', 'table_name']),
@@ -217,7 +217,8 @@ function getSheetData_(forceRefresh = false) {
     playerName: findColIndex_(data.header, ['PlayerName', 'Player Name', 'Players', 'Player', 'Name']),
     nationality: findColIndex_(data.header, ['Nationality', 'Nation', 'Country']),
     chipCount: findColIndex_(data.header, ['ChipCount', 'Chips', 'Stack', 'Starting Chips']),
-    keyplayer: 10  // K열 고정 (헤더 이름 무관)
+    keyplayer: 10,  // K열 고정 (헤더 이름 무관)
+    photoUrl: 13    // N열 고정 (Phase 3.1)
   };
 
   if (cols.tableNo === -1 || cols.seatNo === -1 || cols.playerName === -1) {
@@ -306,79 +307,10 @@ function errorResponse_(functionName, error) {
   };
 }
 
-/* ===== KeyPlayers 시트 관리 (Phase 3.1) ===== */
+/* ===== 플레이어 사진 관리 (Phase 3.1 - Type 시트 N열) ===== */
 
 /**
- * KeyPlayers 시트 초기화 (2개 컬럼만)
- * A: PlayerName (PK)
- * B: PhotoURL (HTTPS)
- */
-function initKeyPlayersSheet() {
-  try {
-    const ss = appSS_();
-    let sheet = ss.getSheetByName(KEYPLAYERS_SHEET_NAME);
-
-    // 시트가 없으면 생성
-    if (!sheet) {
-      sheet = ss.insertSheet(KEYPLAYERS_SHEET_NAME);
-      sheet.getRange('A1').setValue('PlayerName');
-      sheet.getRange('B1').setValue('PhotoURL');
-
-      // 헤더 스타일
-      const headerRange = sheet.getRange('A1:B1');
-      headerRange.setFontWeight('bold');
-      headerRange.setBackground('#4285F4');
-      headerRange.setFontColor('#FFFFFF');
-
-      // 컬럼 너비
-      sheet.setColumnWidth(1, 150); // PlayerName
-      sheet.setColumnWidth(2, 400); // PhotoURL
-
-      log_(LOG_LEVEL.INFO, 'initKeyPlayersSheet', 'KeyPlayers 시트 생성 완료');
-    }
-
-    return successResponse_({ message: 'KeyPlayers 시트 준비 완료' });
-
-  } catch (e) {
-    return errorResponse_('initKeyPlayersSheet', e);
-  }
-}
-
-/**
- * KeyPlayers 시트에서 사진 URL 조회 (photoMap 반환)
- * @return {Object} { "박프로": "https://i.imgur.com/abc.jpg", ... }
- */
-function getKeyPlayersPhotoMap_() {
-  const ss = appSS_();
-  const sheet = ss.getSheetByName(KEYPLAYERS_SHEET_NAME);
-
-  const photoMap = {};
-
-  if (!sheet) {
-    return photoMap; // 시트 없으면 빈 객체 반환
-  }
-
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) {
-    return photoMap; // 데이터 없으면 빈 객체
-  }
-
-  const values = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
-
-  values.forEach(row => {
-    const playerName = String(row[0] || '').trim();
-    const photoUrl = String(row[1] || '').trim();
-
-    if (playerName && photoUrl) {
-      photoMap[playerName] = photoUrl;
-    }
-  });
-
-  return photoMap;
-}
-
-/**
- * KeyPlayers 시트에 사진 URL 업데이트 (INSERT or UPDATE)
+ * Type 시트 N열에 사진 URL 업데이트
  * @param {string} playerName - 플레이어 이름
  * @param {string} photoUrl - HTTPS 사진 URL
  */
@@ -391,38 +323,46 @@ function updateKeyPlayerPhoto(playerName, photoUrl) {
       const validName = validatePlayerName_(playerName);
       const validUrl = String(photoUrl || '').trim();
 
-      if (!validUrl.startsWith('https://')) {
+      if (validUrl && !validUrl.startsWith('https://')) {
         throw new Error('사진 URL은 HTTPS로 시작해야 합니다.');
       }
 
-      // KeyPlayers 시트 확인/생성
-      initKeyPlayersSheet();
-
       const ss = appSS_();
-      const sheet = ss.getSheetByName(KEYPLAYERS_SHEET_NAME);
+      const sheet = ss.getSheetByName(TYPE_SHEET_NAME);
+
+      if (!sheet) {
+        throw new Error('Type 시트를 찾을 수 없습니다.');
+      }
+
+      const { cols } = getSheetData_();
       const lastRow = sheet.getLastRow();
 
-      // 기존 행 찾기
+      // PlayerName 컬럼에서 해당 플레이어 찾기
+      if (lastRow < 2) {
+        throw new Error('Type 시트에 데이터가 없습니다.');
+      }
+
+      const playerNames = sheet.getRange(2, cols.playerName + 1, lastRow - 1, 1).getValues();
       let targetRow = -1;
-      if (lastRow >= 2) {
-        const names = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
-        for (let i = 0; i < names.length; i++) {
-          if (String(names[i][0]).trim() === validName) {
-            targetRow = i + 2;
-            break;
-          }
+
+      for (let i = 0; i < playerNames.length; i++) {
+        if (String(playerNames[i][0]).trim() === validName) {
+          targetRow = i + 2;
+          break;
         }
       }
 
-      if (targetRow !== -1) {
-        // UPDATE
-        sheet.getRange(targetRow, 2).setValue(validUrl);
-        log_(LOG_LEVEL.INFO, 'updateKeyPlayerPhoto', '사진 URL 업데이트 완료 (UPDATE)');
-      } else {
-        // INSERT
-        sheet.appendRow([validName, validUrl]);
-        log_(LOG_LEVEL.INFO, 'updateKeyPlayerPhoto', '사진 URL 추가 완료 (INSERT)');
+      if (targetRow === -1) {
+        throw new Error(`플레이어 "${validName}"를 찾을 수 없습니다.`);
       }
+
+      // N열(cols.photoUrl + 1)에 사진 URL 쓰기
+      sheet.getRange(targetRow, cols.photoUrl + 1).setValue(validUrl);
+
+      // 캐시 무효화
+      invalidateCache_();
+
+      log_(LOG_LEVEL.INFO, 'updateKeyPlayerPhoto', '사진 URL 업데이트 완료', { row: targetRow });
 
       return successResponse_({ playerName: validName, photoUrl: validUrl });
 
@@ -442,9 +382,6 @@ function getKeyPlayers() {
     log_(LOG_LEVEL.INFO, 'getKeyPlayers', '키 플레이어 조회 시작');
 
     const { data, cols } = getSheetData_();
-
-    // KeyPlayers 시트에서 사진 MAP 조회
-    const photoMap = getKeyPlayersPhotoMap_();
 
     const players = data.rows
       .filter(row => {
@@ -467,7 +404,7 @@ function getKeyPlayers() {
           playerName: playerName,
           nationality: cols.nationality !== -1 ? String(row[cols.nationality] || '').trim() : '',
           chipCount: cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0,
-          photoUrl: photoMap[playerName] || ''  // JOIN: PlayerName으로 사진 매칭
+          photoUrl: cols.photoUrl !== -1 ? String(row[cols.photoUrl] || '').trim() : ''  // N열에서 직접 읽기
         };
       })
       .filter(p => p.tableNo > 0 && p.seatNo > 0 && p.playerName);
@@ -868,6 +805,90 @@ function migrateAddPokerRoomColumns() {
     Logger.log(`📊 총 ${lastRow - 1}개 행에 기본값 설정 완료`);
 
     return { success: true, message: `컬럼 추가 완료 (${lastRow - 1}개 행)` };
+
+  } catch (err) {
+    Logger.log('❌ 에러:', err.message);
+    throw err;
+  }
+}
+
+/**
+ * [일회성] KeyPlayers 시트 데이터를 Type 시트 N열로 마이그레이션
+ *
+ * 실행 순서:
+ * 1. Apps Script 에디터 (https://script.google.com) 접속
+ * 2. tracker_gs.js 파일 열기
+ * 3. 함수 드롭다운에서 "migrateKeyPlayersToTypeSheetN" 선택
+ * 4. 실행 버튼 (▶️) 클릭
+ * 5. 로그 확인 (보기 → 로그)
+ * 6. 완료 후 KeyPlayers 시트는 수동으로 삭제 또는 보관
+ *
+ * ⚠️ 주의: 이 함수는 1회만 실행하세요.
+ */
+function migrateKeyPlayersToTypeSheetN() {
+  try {
+    const ss = SpreadsheetApp.openById(APP_SPREADSHEET_ID);
+    const typeSheet = ss.getSheetByName('Type');
+    const keyPlayersSheet = ss.getSheetByName('KeyPlayers');
+
+    if (!typeSheet) {
+      throw new Error('Type 시트를 찾을 수 없습니다.');
+    }
+
+    if (!keyPlayersSheet) {
+      Logger.log('⚠️ KeyPlayers 시트가 없습니다. 마이그레이션 스킵.');
+      return { success: true, message: 'KeyPlayers 시트 없음' };
+    }
+
+    // KeyPlayers 시트에서 데이터 읽기 (PlayerName, PhotoURL)
+    const keyPlayersLastRow = keyPlayersSheet.getLastRow();
+    if (keyPlayersLastRow < 2) {
+      Logger.log('⚠️ KeyPlayers 시트에 데이터가 없습니다.');
+      return { success: true, message: '데이터 없음' };
+    }
+
+    const keyPlayersData = keyPlayersSheet.getRange(2, 1, keyPlayersLastRow - 1, 2).getValues();
+    const photoMap = {}; // { "박프로": "https://...", ... }
+
+    keyPlayersData.forEach(row => {
+      const playerName = String(row[0] || '').trim();
+      const photoUrl = String(row[1] || '').trim();
+      if (playerName && photoUrl) {
+        photoMap[playerName] = photoUrl;
+      }
+    });
+
+    Logger.log(`📸 KeyPlayers 시트에서 ${Object.keys(photoMap).length}개 사진 URL 읽기 완료`);
+
+    // Type 시트에서 PlayerName 읽기 및 N열에 쓰기
+    const typeLastRow = typeSheet.getLastRow();
+    if (typeLastRow < 2) {
+      Logger.log('⚠️ Type 시트에 데이터가 없습니다.');
+      return { success: true, message: 'Type 시트 데이터 없음' };
+    }
+
+    // E열(PlayerName)과 N열(PhotoURL) 위치 확인 (0-based: E=4, N=13)
+    const playerNameCol = 5; // E열 (1-based)
+    const photoUrlCol = 14;  // N열 (1-based)
+
+    const playerNames = typeSheet.getRange(2, playerNameCol, typeLastRow - 1, 1).getValues();
+    let updatedCount = 0;
+
+    playerNames.forEach((row, idx) => {
+      const playerName = String(row[0] || '').trim();
+      const photoUrl = photoMap[playerName];
+
+      if (photoUrl) {
+        const targetRow = idx + 2;
+        typeSheet.getRange(targetRow, photoUrlCol).setValue(photoUrl);
+        updatedCount++;
+      }
+    });
+
+    Logger.log(`✅ Type 시트 N열에 ${updatedCount}개 사진 URL 마이그레이션 완료`);
+    Logger.log('🗑️ KeyPlayers 시트는 수동으로 삭제하거나 보관하세요.');
+
+    return { success: true, message: `${updatedCount}개 URL 마이그레이션 완료` };
 
   } catch (err) {
     Logger.log('❌ 에러:', err.message);
