@@ -136,12 +136,12 @@ if (typeof window.TRACKER_VERSION !== 'undefined') {
 /* ===== Helper Functions ===== */
 // 테이블 번호: 숫자 → "T15" 형식 변환
 function formatTableNo(num) {
-  return `T${num}`;
+  return 'T' + num;
 }
 
 // 좌석 번호: 숫자 → "S3" 형식 변환
 function formatSeatNo(num) {
-  return `S${num}`;
+  return 'S' + num;
 }
 
 // 테이블 번호: "T15" 또는 "15" → 숫자 변환
@@ -262,7 +262,7 @@ function renderKeyPlayers(players) {
   }
 
   list.innerHTML = '';
-  countHeader.textContent = `Key Players (${players.length})`;
+  countHeader.textContent = 'Key Players (' + players.length + ')';
 
   players.forEach(p => {
     const card = document.createElement('div');
@@ -865,8 +865,9 @@ function convertToDirectImageUrl(url) {
   const imgurMatch = trimmedUrl.match(/^https?:\/\/imgur\.com\/([a-zA-Z0-9]+)$/);
   if (imgurMatch) {
     const imageId = imgurMatch[1];
-    console.log(`Imgur URL 변환: ${trimmedUrl} → https://i.imgur.com/${imageId}.jpg`);
-    return `https://i.imgur.com/${imageId}.jpg`;
+    const convertedUrl = 'https://i.imgur.com/' + imageId + '.jpg';
+    console.log('Imgur URL 변환: ' + trimmedUrl + ' → ' + convertedUrl);
+    return convertedUrl;
   }
 
   // 기타 URL은 그대로 반환
@@ -883,7 +884,7 @@ function convertToDirectImageUrl(url) {
 function formatRoomTableInfo(pokerRoom, tableName, tableId) {
   const room = pokerRoom || '';
   const table = tableName || '';
-  return `${room} | ${table} | ${tableId}`;
+  return room + ' | ' + table + ' | ' + tableId;
 }
 
 function parseChips(input) {
@@ -913,22 +914,22 @@ function getFlag(nationCode) {
 }
 
 function getChipChange(tableId, seatNo, currentChips) {
-  const key = `${tableId}_${seatNo}`;
+  const key = tableId + '_' + seatNo;
   const history = JSON.parse(localStorage.getItem('phl_chipHistory') || '{}');
   const oldChips = history[key] || currentChips;
 
   const diff = currentChips - oldChips;
   if (diff > 0) {
-    return { amount: diff, direction: 'up', text: `↑${formatChips(diff)}` };
+    return { amount: diff, direction: 'up', text: '↑' + formatChips(diff) };
   } else if (diff < 0) {
-    return { amount: diff, direction: 'down', text: `↓${formatChips(Math.abs(diff))}` };
+    return { amount: diff, direction: 'down', text: '↓' + formatChips(Math.abs(diff)) };
   } else {
     return { amount: 0, direction: 'same', text: '' };
   }
 }
 
 function saveChipHistory(tableId, seatNo, chips) {
-  const key = `${tableId}_${seatNo}`;
+  const key = tableId + '_' + seatNo;
   const history = JSON.parse(localStorage.getItem('phl_chipHistory') || '{}');
   history[key] = chips;
   localStorage.setItem('phl_chipHistory', JSON.stringify(history));
