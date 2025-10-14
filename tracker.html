@@ -259,7 +259,6 @@ function renderKeyPlayers(players) {
   players.forEach(p => {
     const card = document.createElement('div');
     card.className = 'keyPlayerCardPro';
-    card.onclick = () => showTableView(p.tableNo);
 
     // 국가명
     const countryName = getCountryName(p.nationality);
@@ -281,6 +280,9 @@ function renderKeyPlayers(players) {
         <button class="photoEditBtn">📷 사진 편집</button>
       </div>
     `;
+
+    // 카드 클릭 이벤트 (테이블 뷰로 이동)
+    card.addEventListener('click', () => showTableView(p.tableNo));
 
     // 사진 편집 버튼 이벤트 (DOM으로 안전하게 연결)
     const photoEditBtn = card.querySelector('.photoEditBtn');
@@ -459,7 +461,7 @@ function confirmEditChips(tableId, seatNo, oldChips) {
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        alert(`에러: ${response.error?.message || '칩 수정 실패'}`);
+        alert('에러: ' + (response.error?.message || '칩 수정 실패'));
         hideLoading();
         return;
       }
@@ -471,7 +473,7 @@ function confirmEditChips(tableId, seatNo, oldChips) {
       }
     })
     .withFailureHandler(err => {
-      alert(`에러: ${err.message}`);
+      alert('에러: ' + err.message);
       hideLoading();
     })
     .updatePlayerChips(tableId, seatNo, newChips);
@@ -539,7 +541,7 @@ function confirmAddPlayer(tableId, seatNo) {
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        alert(`에러: ${response.error?.message || '플레이어 추가 실패'}`);
+        alert('에러: ' + (response.error?.message || '플레이어 추가 실패'));
         hideLoading();
         return;
       }
@@ -550,7 +552,7 @@ function confirmAddPlayer(tableId, seatNo) {
       }
     })
     .withFailureHandler(err => {
-      alert(`에러: ${err.message}`);
+      alert('에러: ' + err.message);
       hideLoading();
     })
     .addPlayer(tableId, seatNo, name, nation, chips, isKey);
@@ -558,14 +560,14 @@ function confirmAddPlayer(tableId, seatNo) {
 
 /* ===== Delete Player ===== */
 function deletePlayerConfirm(tableId, seatNo, playerName) {
-  if (!confirm(`${seatNo} ${playerName} 삭제하시겠습니까?`)) return;
+  if (!confirm(seatNo + ' ' + playerName + ' 삭제하시겠습니까?')) return;
 
   showLoading();
 
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        alert(`에러: ${response.error?.message || '플레이어 삭제 실패'}`);
+        alert('에러: ' + (response.error?.message || '플레이어 삭제 실패'));
         hideLoading();
         return;
       }
@@ -576,7 +578,7 @@ function deletePlayerConfirm(tableId, seatNo, playerName) {
       }
     })
     .withFailureHandler(err => {
-      alert(`에러: ${err.message}`);
+      alert('에러: ' + err.message);
       hideLoading();
     })
     .removePlayer(tableId, seatNo);
@@ -649,14 +651,14 @@ function confirmPhotoEdit(playerName) {
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        alert(`에러: ${response.error?.message || '사진 업데이트 실패'}`);
+        alert('에러: ' + (response.error?.message || '사진 업데이트 실패'));
         hideLoading();
         return;
       }
       loadKeyPlayers();
     })
     .withFailureHandler(err => {
-      alert(`에러: ${err.message}`);
+      alert('에러: ' + err.message);
       hideLoading();
     })
     .updateKeyPlayerPhoto(playerName, photoUrl);
