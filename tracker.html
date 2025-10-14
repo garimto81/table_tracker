@@ -255,26 +255,6 @@ function renderKeyPlayers(players) {
     card.className = 'keyPlayerCardPro';
     card.onclick = () => showTableView(p.tableNo);
 
-    // 사진 HTML - URL이 있으면 이미지 표시, 없으면 기본 아이콘
-    let photoHTML;
-    if (p.photoUrl && p.photoUrl.trim()) {
-      // Imgur URL을 직접 이미지 링크로 자동 변환
-      const directImageUrl = convertToDirectImageUrl(p.photoUrl);
-
-      // URL이 있을 때: img 태그로 표시
-      photoHTML = `<img src="${directImageUrl}"
-        class="playerPhotoPro"
-        alt="${p.playerName}"
-        crossorigin="anonymous"
-        loading="lazy"
-        onerror="console.error('이미지 로드 실패:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
-        onload="console.log('이미지 로드 성공:', this.src); this.style.display='block'; if(this.nextElementSibling) this.nextElementSibling.style.display='none';">
-      <div class="playerPhotoPro empty" style="display:none;" title="이미지 로드 실패">👤</div>`;
-    } else {
-      // URL이 없을 때: 기본 아이콘
-      photoHTML = `<div class="playerPhotoPro empty" title="사진 URL 없음 (Type 시트 N열 확인)">👤</div>`;
-    }
-
     // 국가명
     const countryName = getCountryName(p.nationality);
 
@@ -285,9 +265,10 @@ function renderKeyPlayers(players) {
     const safeName = p.playerName.replace(/'/g, "\\'");
     const safePhotoUrl = (p.photoUrl || '').replace(/'/g, "\\'");
 
+    // 카드 구조 생성 (사진 제외)
     card.innerHTML = `
       <div class="roomTableInfo">${formatRoomTableInfo(p.pokerRoom, p.tableName, p.tableNo)}</div>
-      ${photoHTML}
+      <div class="photoContainer"></div>
       <div class="playerDetailsPro">
         <div class="playerNamePro">${p.playerName}</div>
         <div class="playerMetaPro">
@@ -298,6 +279,51 @@ function renderKeyPlayers(players) {
         <button class="photoEditBtn" onclick="event.stopPropagation(); editPlayerPhoto('${safeName}', '${safePhotoUrl}')">📷 사진 편집</button>
       </div>
     `;
+
+    // 사진 요소를 DOM으로 직접 생성 (innerHTML 사용 안 함)
+    const photoContainer = card.querySelector('.photoContainer');
+
+    if (p.photoUrl && p.photoUrl.trim()) {
+      // Imgur URL을 직접 이미지 링크로 자동 변환
+      const directImageUrl = convertToDirectImageUrl(p.photoUrl);
+
+      // img 요소 생성
+      const img = document.createElement('img');
+      img.src = directImageUrl;
+      img.className = 'playerPhotoPro';
+      img.alt = p.playerName;
+      img.crossOrigin = 'anonymous';
+      img.loading = 'lazy';
+
+      img.onerror = function() {
+        console.error('이미지 로드 실패:', this.src);
+        this.style.display = 'none';
+        if (this.nextElementSibling) this.nextElementSibling.style.display = 'flex';
+      };
+
+      img.onload = function() {
+        console.log('이미지 로드 성공:', this.src);
+        this.style.display = 'block';
+        if (this.nextElementSibling) this.nextElementSibling.style.display = 'none';
+      };
+
+      // fallback div 생성
+      const fallback = document.createElement('div');
+      fallback.className = 'playerPhotoPro empty';
+      fallback.style.display = 'none';
+      fallback.title = '이미지 로드 실패';
+      fallback.textContent = '👤';
+
+      photoContainer.appendChild(img);
+      photoContainer.appendChild(fallback);
+    } else {
+      // URL이 없을 때: 기본 아이콘
+      const emptyPhoto = document.createElement('div');
+      emptyPhoto.className = 'playerPhotoPro empty';
+      emptyPhoto.title = '사진 URL 없음 (Type 시트 N열 확인)';
+      emptyPhoto.textContent = '👤';
+      photoContainer.appendChild(emptyPhoto);
+    }
 
     list.appendChild(card);
   });
