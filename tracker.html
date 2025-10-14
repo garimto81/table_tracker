@@ -324,12 +324,13 @@ function renderTablePlayers(tableId, players) {
       `;
     } else {
       const keyStar = p.keyplayer ? '<span class="keyStar">⭐</span>' : '';
+      const safeName = p.playerName.replace(/'/g, "\\'");
       row.innerHTML = `
         <span class="seat">${formatSeatNo(p.seatNo)}</span>
         <span class="name">${p.playerName}${keyStar}</span>
         <span class="flag">${getFlag(p.nationality)}</span>
-        <span class="chips" onclick="editChips(${tableId}, ${p.seatNo}, ${p.chipCount}, '${p.playerName}')">${formatChips(p.chipCount)}</span>
-        <button class="deleteBtn" onclick="deletePlayerConfirm(${tableId}, ${p.seatNo}, '${p.playerName}')">🗑️</button>
+        <span class="chips" onclick="editChips(${tableId}, ${p.seatNo}, ${p.chipCount}, '${safeName}')">${formatChips(p.chipCount)}</span>
+        <button class="deleteBtn" onclick="deletePlayerConfirm(${tableId}, ${p.seatNo}, '${safeName}')">🗑️</button>
       `;
     }
 
@@ -496,6 +497,8 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
   const overlay = document.getElementById('overlay');
   const content = document.getElementById('overlayContent');
 
+  const safeName = playerName.replace(/'/g, "\\'");
+
   content.innerHTML = `
     <div class="overlayTitle">📷 ${playerName} 사진 편집</div>
     <input type="text" id="photoUrlInput" class="overlayInput" placeholder="https://i.imgur.com/abc123.jpg" value="${currentPhotoUrl}">
@@ -504,7 +507,7 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
     </div>
     <div class="overlayActions">
       <button class="btnCancel" onclick="closeOverlay()">취소</button>
-      <button class="btnConfirm" onclick="confirmPhotoEdit('${playerName}')">저장</button>
+      <button class="btnConfirm" onclick="confirmPhotoEdit('${safeName}')">저장</button>
     </div>
   `;
 
