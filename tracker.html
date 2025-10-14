@@ -220,7 +220,11 @@ function loadKeyPlayers() {
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        list.innerHTML = `<div class="error">에러: ${response.error?.message || '데이터 로드 실패'}</div>`;
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error';
+        errorDiv.textContent = '에러: ' + (response.error?.message || '데이터 로드 실패');
+        list.innerHTML = '';
+        list.appendChild(errorDiv);
         return;
       }
       const players = response.data.players;
@@ -238,7 +242,11 @@ function loadKeyPlayers() {
       renderKeyPlayers(players);
     })
     .withFailureHandler(err => {
-      list.innerHTML = `<div class="error">에러: ${err.message}</div>`;
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error';
+      errorDiv.textContent = '에러: ' + err.message;
+      list.innerHTML = '';
+      list.appendChild(errorDiv);
     })
     .getKeyPlayers();
 }
@@ -266,33 +274,66 @@ function renderKeyPlayers(players) {
     // 칩 쉼표 포맷
     const chipsFormatted = formatChips(p.chipCount);
 
-    // 카드 구조 생성 (사진 및 이벤트 제외)
-    card.innerHTML = `
-      <div class="roomTableInfo">${formatRoomTableInfo(p.pokerRoom, p.tableName, p.tableNo)}</div>
-      <div class="photoContainer"></div>
-      <div class="playerDetailsPro">
-        <div class="playerNamePro">${p.playerName}</div>
-        <div class="playerMetaPro">
-          <span><span class="icon">📍</span>${formatTableNo(p.tableNo)}, ${formatSeatNo(p.seatNo)}</span>
-          <span class="countryNamePro">${getFlag(p.nationality)} ${countryName}</span>
-          <span><span class="icon">💰</span>${chipsFormatted} chips</span>
-        </div>
-        <button class="photoEditBtn">📷 사진 편집</button>
-      </div>
-    `;
+    // 카드 구조 생성 (DOM API 사용 - template literal 제거)
+    const roomInfo = document.createElement('div');
+    roomInfo.className = 'roomTableInfo';
+    roomInfo.textContent = formatRoomTableInfo(p.pokerRoom, p.tableName, p.tableNo);
+
+    const photoContainer = document.createElement('div');
+    photoContainer.className = 'photoContainer';
+
+    const playerDetails = document.createElement('div');
+    playerDetails.className = 'playerDetailsPro';
+
+    const playerName = document.createElement('div');
+    playerName.className = 'playerNamePro';
+    playerName.textContent = p.playerName;
+
+    const playerMeta = document.createElement('div');
+    playerMeta.className = 'playerMetaPro';
+
+    const locationSpan = document.createElement('span');
+    const locationIcon = document.createElement('span');
+    locationIcon.className = 'icon';
+    locationIcon.textContent = '📍';
+    locationSpan.appendChild(locationIcon);
+    locationSpan.appendChild(document.createTextNode(formatTableNo(p.tableNo) + ', ' + formatSeatNo(p.seatNo)));
+
+    const countrySpan = document.createElement('span');
+    countrySpan.className = 'countryNamePro';
+    countrySpan.textContent = getFlag(p.nationality) + ' ' + countryName;
+
+    const chipsSpan = document.createElement('span');
+    const chipsIcon = document.createElement('span');
+    chipsIcon.className = 'icon';
+    chipsIcon.textContent = '💰';
+    chipsSpan.appendChild(chipsIcon);
+    chipsSpan.appendChild(document.createTextNode(chipsFormatted + ' chips'));
+
+    playerMeta.appendChild(locationSpan);
+    playerMeta.appendChild(countrySpan);
+    playerMeta.appendChild(chipsSpan);
+
+    const photoEditBtn = document.createElement('button');
+    photoEditBtn.className = 'photoEditBtn';
+    photoEditBtn.textContent = '📷 사진 편집';
+
+    playerDetails.appendChild(playerName);
+    playerDetails.appendChild(playerMeta);
+    playerDetails.appendChild(photoEditBtn);
+
+    card.appendChild(roomInfo);
+    card.appendChild(photoContainer);
+    card.appendChild(playerDetails);
 
     // 카드 클릭 이벤트 (테이블 뷰로 이동)
     card.addEventListener('click', () => showTableView(p.tableNo));
 
     // 사진 편집 버튼 이벤트 (DOM으로 안전하게 연결)
-    const photoEditBtn = card.querySelector('.photoEditBtn');
     photoEditBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       editPlayerPhoto(p.playerName, p.photoUrl || '');
     });
-
-    // 사진 요소를 DOM으로 직접 생성 (innerHTML 사용 안 함)
-    const photoContainer = card.querySelector('.photoContainer');
 
     if (p.photoUrl && p.photoUrl.trim()) {
       // Imgur URL을 직접 이미지 링크로 자동 변환
@@ -348,14 +389,22 @@ function loadTablePlayers(tableId) {
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        list.innerHTML = `<div class="error">에러: ${response.error?.message || '데이터 로드 실패'}</div>`;
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error';
+        errorDiv.textContent = '에러: ' + (response.error?.message || '데이터 로드 실패');
+        list.innerHTML = '';
+        list.appendChild(errorDiv);
         return;
       }
       const players = response.data.players;
       renderTablePlayers(tableId, players);
     })
     .withFailureHandler(err => {
-      list.innerHTML = `<div class="error">에러: ${err.message}</div>`;
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'error';
+      errorDiv.textContent = '에러: ' + err.message;
+      list.innerHTML = '';
+      list.appendChild(errorDiv);
     })
     .getTablePlayers(tableId);
 }
@@ -379,37 +428,62 @@ function renderTablePlayers(tableId, players) {
     row.className = p.keyplayer ? 'playerRow keyplayer' : 'playerRow';
 
     if (p.empty) {
-      row.innerHTML = `
-        <span class="seat">${formatSeatNo(p.seatNo)}</span>
-        <span class="emptySeat">(빈 좌석)</span>
-        <button class="addBtn">[+]</button>
-      `;
+      const seat = document.createElement('span');
+      seat.className = 'seat';
+      seat.textContent = formatSeatNo(p.seatNo);
 
-      // 이벤트 안전하게 연결
-      const addBtn = row.querySelector('.addBtn');
+      const emptySeat = document.createElement('span');
+      emptySeat.className = 'emptySeat';
+      emptySeat.textContent = '(빈 좌석)';
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'addBtn';
+      addBtn.textContent = '[+]';
       addBtn.addEventListener('click', () => addPlayerPrompt(tableId, p.seatNo));
 
-    } else {
-      const keyStar = p.keyplayer ? '<span class="keyStar">⭐</span>' : '';
-      row.innerHTML = `
-        <span class="seat">${formatSeatNo(p.seatNo)}</span>
-        <span class="name">${p.playerName}${keyStar}</span>
-        <span class="flag">${getFlag(p.nationality)}</span>
-        <span class="chips">${formatChips(p.chipCount)}</span>
-        <button class="deleteBtn">🗑️</button>
-      `;
+      row.appendChild(seat);
+      row.appendChild(emptySeat);
+      row.appendChild(addBtn);
 
-      // 이벤트 안전하게 연결 (DOM API)
-      const chipsSpan = row.querySelector('.chips');
-      chipsSpan.style.cursor = 'pointer';
-      chipsSpan.addEventListener('click', () => {
+    } else {
+      const seat = document.createElement('span');
+      seat.className = 'seat';
+      seat.textContent = formatSeatNo(p.seatNo);
+
+      const name = document.createElement('span');
+      name.className = 'name';
+      name.textContent = p.playerName;
+      if (p.keyplayer) {
+        const keyStar = document.createElement('span');
+        keyStar.className = 'keyStar';
+        keyStar.textContent = '⭐';
+        name.appendChild(keyStar);
+      }
+
+      const flag = document.createElement('span');
+      flag.className = 'flag';
+      flag.textContent = getFlag(p.nationality);
+
+      const chips = document.createElement('span');
+      chips.className = 'chips';
+      chips.textContent = formatChips(p.chipCount);
+      chips.style.cursor = 'pointer';
+      chips.addEventListener('click', () => {
         editChips(tableId, p.seatNo, p.chipCount, p.playerName);
       });
 
-      const deleteBtn = row.querySelector('.deleteBtn');
+      const deleteBtn = document.createElement('button');
+      deleteBtn.className = 'deleteBtn';
+      deleteBtn.textContent = '🗑️';
       deleteBtn.addEventListener('click', () => {
         deletePlayerConfirm(tableId, p.seatNo, p.playerName);
       });
+
+      row.appendChild(seat);
+      row.appendChild(name);
+      row.appendChild(flag);
+      row.appendChild(chips);
+      row.appendChild(deleteBtn);
     }
 
     list.appendChild(row);
@@ -421,22 +495,46 @@ function editChips(tableId, seatNo, currentChips, playerName) {
   const overlay = document.getElementById('overlay');
   const content = document.getElementById('overlayContent');
 
-  content.innerHTML = `
-    <div class="overlayTitle">${formatSeatNo(seatNo)} ${playerName} 칩 수정</div>
-    <div class="muted" style="font-size:1.2rem;margin-bottom:var(--sp-md)">현재: ${formatChips(currentChips)}</div>
-    <input type="text" id="chipInput" class="overlayInput" placeholder="예: 750000 또는 750k" autocomplete="off" inputmode="decimal">
-    <div class="overlayActions">
-      <button class="btnCancel">취소</button>
-      <button class="btnConfirm">확인</button>
-    </div>
-  `;
+  content.innerHTML = '';
 
-  // 이벤트 안전하게 연결
-  const btnCancel = content.querySelector('.btnCancel');
-  const btnConfirm = content.querySelector('.btnConfirm');
+  const title = document.createElement('div');
+  title.className = 'overlayTitle';
+  title.textContent = formatSeatNo(seatNo) + ' ' + playerName + ' 칩 수정';
 
+  const currentInfo = document.createElement('div');
+  currentInfo.className = 'muted';
+  currentInfo.style.fontSize = '1.2rem';
+  currentInfo.style.marginBottom = 'var(--sp-md)';
+  currentInfo.textContent = '현재: ' + formatChips(currentChips);
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.id = 'chipInput';
+  input.className = 'overlayInput';
+  input.placeholder = '예: 750000 또는 750k';
+  input.autocomplete = 'off';
+  input.inputMode = 'decimal';
+
+  const actions = document.createElement('div');
+  actions.className = 'overlayActions';
+
+  const btnCancel = document.createElement('button');
+  btnCancel.className = 'btnCancel';
+  btnCancel.textContent = '취소';
   btnCancel.addEventListener('click', closeOverlay);
+
+  const btnConfirm = document.createElement('button');
+  btnConfirm.className = 'btnConfirm';
+  btnConfirm.textContent = '확인';
   btnConfirm.addEventListener('click', () => confirmEditChips(tableId, seatNo, currentChips));
+
+  actions.appendChild(btnCancel);
+  actions.appendChild(btnConfirm);
+
+  content.appendChild(title);
+  content.appendChild(currentInfo);
+  content.appendChild(input);
+  content.appendChild(actions);
 
   overlay.classList.add('show');
   setTimeout(() => document.getElementById('chipInput').focus(), 100);
@@ -484,27 +582,78 @@ function addPlayerPrompt(tableId, seatNo) {
   const overlay = document.getElementById('overlay');
   const content = document.getElementById('overlayContent');
 
-  content.innerHTML = `
-    <div class="overlayTitle">${seatNo} 플레이어 추가</div>
-    <input type="text" id="nameInput" class="overlayInput" placeholder="이름" autocomplete="off">
-    <input type="text" id="nationInput" class="overlayInput" placeholder="국가 코드 (예: KR, US, JP)" autocomplete="off" maxlength="2" style="text-transform:uppercase">
-    <input type="text" id="chipsInput" class="overlayInput" placeholder="칩 (예: 280000 또는 280k)" autocomplete="off" inputmode="decimal">
-    <label style="display:flex;align-items:center;gap:var(--sp-md);margin-bottom:var(--sp-md)">
-      <input type="checkbox" id="keyInput" style="width:32px;height:32px;cursor:pointer">
-      <span style="font-size:1.4rem">키 플레이어로 등록</span>
-    </label>
-    <div class="overlayActions">
-      <button class="btnCancel">취소</button>
-      <button class="btnConfirm">추가</button>
-    </div>
-  `;
+  content.innerHTML = '';
 
-  // 이벤트 안전하게 연결
-  const btnCancel = content.querySelector('.btnCancel');
-  const btnConfirm = content.querySelector('.btnConfirm');
+  const title = document.createElement('div');
+  title.className = 'overlayTitle';
+  title.textContent = seatNo + ' 플레이어 추가';
 
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.id = 'nameInput';
+  nameInput.className = 'overlayInput';
+  nameInput.placeholder = '이름';
+  nameInput.autocomplete = 'off';
+
+  const nationInput = document.createElement('input');
+  nationInput.type = 'text';
+  nationInput.id = 'nationInput';
+  nationInput.className = 'overlayInput';
+  nationInput.placeholder = '국가 코드 (예: KR, US, JP)';
+  nationInput.autocomplete = 'off';
+  nationInput.maxLength = 2;
+  nationInput.style.textTransform = 'uppercase';
+
+  const chipsInput = document.createElement('input');
+  chipsInput.type = 'text';
+  chipsInput.id = 'chipsInput';
+  chipsInput.className = 'overlayInput';
+  chipsInput.placeholder = '칩 (예: 280000 또는 280k)';
+  chipsInput.autocomplete = 'off';
+  chipsInput.inputMode = 'decimal';
+
+  const label = document.createElement('label');
+  label.style.display = 'flex';
+  label.style.alignItems = 'center';
+  label.style.gap = 'var(--sp-md)';
+  label.style.marginBottom = 'var(--sp-md)';
+
+  const keyInput = document.createElement('input');
+  keyInput.type = 'checkbox';
+  keyInput.id = 'keyInput';
+  keyInput.style.width = '32px';
+  keyInput.style.height = '32px';
+  keyInput.style.cursor = 'pointer';
+
+  const labelText = document.createElement('span');
+  labelText.style.fontSize = '1.4rem';
+  labelText.textContent = '키 플레이어로 등록';
+
+  label.appendChild(keyInput);
+  label.appendChild(labelText);
+
+  const actions = document.createElement('div');
+  actions.className = 'overlayActions';
+
+  const btnCancel = document.createElement('button');
+  btnCancel.className = 'btnCancel';
+  btnCancel.textContent = '취소';
   btnCancel.addEventListener('click', closeOverlay);
+
+  const btnConfirm = document.createElement('button');
+  btnConfirm.className = 'btnConfirm';
+  btnConfirm.textContent = '추가';
   btnConfirm.addEventListener('click', () => confirmAddPlayer(tableId, seatNo));
+
+  actions.appendChild(btnCancel);
+  actions.appendChild(btnConfirm);
+
+  content.appendChild(title);
+  content.appendChild(nameInput);
+  content.appendChild(nationInput);
+  content.appendChild(chipsInput);
+  content.appendChild(label);
+  content.appendChild(actions);
 
   overlay.classList.add('show');
   setTimeout(() => document.getElementById('nameInput').focus(), 100);
@@ -589,24 +738,55 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
   const overlay = document.getElementById('overlay');
   const content = document.getElementById('overlayContent');
 
-  content.innerHTML = `
-    <div class="overlayTitle">📷 ${playerName} 사진 편집</div>
-    <input type="text" id="photoUrlInput" class="overlayInput" placeholder="https://i.imgur.com/abc123.jpg" value="${currentPhotoUrl}">
-    <div style="font-size: 1.1rem; color: #9aa3b2; margin-top: -8px; margin-bottom: 12px;">
-      💡 <a href="https://imgur.com/" target="_blank" style="color: #2a6fff;">Imgur</a>에 사진 업로드 후 HTTPS URL 입력
-    </div>
-    <div class="overlayActions">
-      <button class="btnCancel">취소</button>
-      <button class="btnConfirm">저장</button>
-    </div>
-  `;
+  content.innerHTML = '';
 
-  // 이벤트 안전하게 연결
-  const btnCancel = content.querySelector('.btnCancel');
-  const btnConfirm = content.querySelector('.btnConfirm');
+  const title = document.createElement('div');
+  title.className = 'overlayTitle';
+  title.textContent = '📷 ' + playerName + ' 사진 편집';
 
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.id = 'photoUrlInput';
+  input.className = 'overlayInput';
+  input.placeholder = 'https://i.imgur.com/abc123.jpg';
+  input.value = currentPhotoUrl;
+
+  const hint = document.createElement('div');
+  hint.style.fontSize = '1.1rem';
+  hint.style.color = '#9aa3b2';
+  hint.style.marginTop = '-8px';
+  hint.style.marginBottom = '12px';
+  hint.textContent = '💡 ';
+
+  const imgurLink = document.createElement('a');
+  imgurLink.href = 'https://imgur.com/';
+  imgurLink.target = '_blank';
+  imgurLink.style.color = '#2a6fff';
+  imgurLink.textContent = 'Imgur';
+
+  hint.appendChild(imgurLink);
+  hint.appendChild(document.createTextNode('에 사진 업로드 후 HTTPS URL 입력'));
+
+  const actions = document.createElement('div');
+  actions.className = 'overlayActions';
+
+  const btnCancel = document.createElement('button');
+  btnCancel.className = 'btnCancel';
+  btnCancel.textContent = '취소';
   btnCancel.addEventListener('click', closeOverlay);
+
+  const btnConfirm = document.createElement('button');
+  btnConfirm.className = 'btnConfirm';
+  btnConfirm.textContent = '저장';
   btnConfirm.addEventListener('click', () => confirmPhotoEdit(playerName));
+
+  actions.appendChild(btnCancel);
+  actions.appendChild(btnConfirm);
+
+  content.appendChild(title);
+  content.appendChild(input);
+  content.appendChild(hint);
+  content.appendChild(actions);
 
   overlay.classList.add('show');
 
@@ -635,10 +815,10 @@ function confirmPhotoEdit(playerName) {
   const directUrl = convertToDirectImageUrl(photoUrl);
   if (directUrl !== photoUrl) {
     const confirmed = confirm(
-      `Imgur 페이지 URL이 감지되었습니다.\n\n` +
-      `원본: ${photoUrl}\n` +
-      `변환: ${directUrl}\n\n` +
-      `직접 이미지 링크로 변환하여 저장하시겠습니까?`
+      'Imgur 페이지 URL이 감지되었습니다.\n\n' +
+      '원본: ' + photoUrl + '\n' +
+      '변환: ' + directUrl + '\n\n' +
+      '직접 이미지 링크로 변환하여 저장하시겠습니까?'
     );
     if (confirmed) {
       photoUrl = directUrl;
