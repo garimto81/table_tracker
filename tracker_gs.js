@@ -343,18 +343,19 @@ function uploadToImgur(playerName, base64Image) {
         throw new Error('유효하지 않은 이미지 데이터입니다.');
       }
 
-      // Imgur API 호출
+      // Imgur API 호출 (Form-urlencoded payload)
+      const payload = 'image=' + encodeURIComponent(base64Image) +
+                      '&type=base64' +
+                      '&name=' + encodeURIComponent(playerName) +
+                      '&title=' + encodeURIComponent(playerName + ' - Poker Tracker');
+
       const response = UrlFetchApp.fetch('https://api.imgur.com/3/image', {
         method: 'POST',
         headers: {
-          'Authorization': 'Client-ID ' + IMGUR_CLIENT_ID
+          'Authorization': 'Client-ID ' + IMGUR_CLIENT_ID,
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
-        payload: {
-          image: base64Image,
-          type: 'base64',
-          name: playerName,
-          title: playerName + ' - Poker Tracker'
-        },
+        payload: payload,
         muteHttpExceptions: true
       });
 
@@ -994,6 +995,71 @@ function migrateKeyPlayersToTypeSheetN() {
   } catch (err) {
     Logger.log('❌ 에러:', err.message);
     throw err;
+  }
+}
+
+/* ===== 테스트 함수 (Phase 3.2) ===== */
+
+/**
+ * Imgur 업로드 권한 테스트
+ * Apps Script 에디터에서 실행하여 OAuth 승인 트리거
+ *
+ * 실행 방법:
+ * 1. Apps Script 에디터 접속
+ * 2. 함수 드롭다운에서 "testImgurUploadPermission" 선택
+ * 3. ▶️ 실행 버튼 클릭
+ * 4. "권한 검토" 팝업 → 고급 → 허용 클릭
+ * 5. 로그 확인 (보기 → 실행 로그)
+ */
+function testImgurUploadPermission() {
+  try {
+    // 1x1 빨간색 PNG (올바른 Base64 인코딩)
+    const testBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==';
+
+    Logger.log('=== Imgur 업로드 권한 테스트 시작 ===');
+    Logger.log('Client ID: ' + IMGUR_CLIENT_ID);
+
+    // UrlFetchApp.fetch 호출하여 OAuth 권한 트리거 (Form-urlencoded)
+    const payload = 'image=' + encodeURIComponent(testBase64) +
+                    '&type=base64' +
+                    '&name=OAuth%20Test' +
+                    '&title=Permission%20Test';
+
+    const response = UrlFetchApp.fetch('https://api.imgur.com/3/image', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Client-ID ' + IMGUR_CLIENT_ID,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      payload: payload,
+      muteHttpExceptions: true
+    });
+
+    const statusCode = response.getResponseCode();
+    const json = JSON.parse(response.getContentText());
+
+    Logger.log('✅ UrlFetchApp 권한 승인 완료!');
+    Logger.log('응답 코드: ' + statusCode);
+    Logger.log('업로드 성공: ' + json.success);
+
+    if (json.success) {
+      Logger.log('이미지 URL: ' + json.data.link);
+      Logger.log('삭제 해시: ' + json.data.deletehash);
+      return '✅ 테스트 성공! 이제 웹앱에서 사진 업로드가 정상 작동합니다.';
+    } else {
+      Logger.log('⚠️ Imgur API 오류: ' + JSON.stringify(json.data));
+      return '⚠️ 권한은 승인되었으나 Imgur API 오류 발생';
+    }
+
+  } catch (e) {
+    Logger.log('❌ 에러: ' + e.message);
+    Logger.log('에러 스택: ' + e.stack);
+
+    if (e.message.includes('권한') || e.message.includes('permission')) {
+      return '❌ 권한 오류: Apps Script 에디터에서 "권한 검토" 클릭 후 승인 필요';
+    }
+
+    throw e;
   }
 }
 

@@ -16,7 +16,8 @@
       "Bash(npm install:*)",
       "Bash(test:*)",
       "Bash(grep:*)",
-      "Bash(npx @google/clasp login:*)"
+      "Bash(npx @google/clasp login:*)",
+      "Read(//d/**)"
     ],
     "deny": [],
     "ask": []
