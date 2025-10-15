@@ -629,6 +629,59 @@ function updateKeyPlayerPhoto(playerName, photoUrl) {
 /* ===== Firebase 동기화 (Phase 3.5 - Realtime Cache) ===== */
 
 /**
+ * Firebase에서 키 플레이어 데이터 읽기 (Proxy)
+ * 브라우저에서 안전하게 Firebase 데이터를 가져오기 위한 프록시
+ * @return {Object} 플레이어 데이터
+ */
+function getKeyPlayersFromFirebase() {
+  try {
+    log_(LOG_LEVEL.INFO, 'getKeyPlayersFromFirebase', 'Firebase 데이터 조회 시작');
+
+    const props = PropertiesService.getScriptProperties();
+    const firebaseUrl = props.getProperty('FIREBASE_DB_URL');
+    const firebaseSecret = props.getProperty('FIREBASE_SECRET');
+
+    if (!firebaseUrl) {
+      // Firebase 설정 없으면 Sheets에서 직접 읽기
+      return getKeyPlayers();
+    }
+
+    // Firebase REST API로 읽기
+    const url = firebaseUrl + '/keyPlayers.json' + (firebaseSecret ? '?auth=' + firebaseSecret : '');
+
+    const response = UrlFetchApp.fetch(url, {
+      method: 'GET',
+      muteHttpExceptions: true
+    });
+
+    const statusCode = response.getResponseCode();
+
+    if (statusCode !== 200) {
+      log_(LOG_LEVEL.WARN, 'getKeyPlayersFromFirebase', 'Firebase 읽기 실패, Sheets 사용', { statusCode });
+      return getKeyPlayers(); // Fallback
+    }
+
+    const data = JSON.parse(response.getContentText());
+
+    if (!data) {
+      log_(LOG_LEVEL.WARN, 'getKeyPlayersFromFirebase', 'Firebase 데이터 없음, Sheets 사용');
+      return getKeyPlayers(); // Fallback
+    }
+
+    // Object를 Array로 변환
+    const players = Object.values(data);
+
+    log_(LOG_LEVEL.INFO, 'getKeyPlayersFromFirebase', 'Firebase 데이터 조회 완료', { count: players.length });
+
+    return successResponse_({ players, count: players.length });
+
+  } catch (e) {
+    log_(LOG_LEVEL.ERROR, 'getKeyPlayersFromFirebase', 'Firebase 조회 실패, Sheets 사용', { error: e.message });
+    return getKeyPlayers(); // Fallback
+  }
+}
+
+/**
  * Firebase Realtime Database로 키 플레이어 동기화
  * @return {Object} 동기화 결과
  */

@@ -141,71 +141,77 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
   </div>
 </div>
 
-<!-- Firebase SDK (Phase 3.5 - Realtime Cache) -->
-<script type="module">
+<!-- Firebase Proxy Mode (Phase 3.5.1 - Secure) -->
+<script>
 /* ===== Firebase Configuration ===== */
-// TODO: Firebase Console에서 복사한 설정으로 교체
-const FIREBASE_CONFIG = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
+// 🔒 보안: Apps Script Proxy를 통해 Firebase 데이터 로드
+// API Key를 브라우저에 노출하지 않음
 
-// Firebase 활성화 플래그
-const ENABLE_FIREBASE = false; // true로 변경 시 Firebase 실시간 로딩 활성화
+// Firebase 캐싱 모드 활성화
+const ENABLE_FIREBASE_CACHE = true; // ✅ Firebase 캐시 사용 (Apps Script Proxy)
 
-if (ENABLE_FIREBASE && FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
-  // Firebase SDK 동적 import
-  import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js').then(({ initializeApp }) => {
-    import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js').then(({ getDatabase, ref, onValue }) => {
+// 폴링 간격 (밀리초)
+const FIREBASE_POLLING_INTERVAL = 5000; // 5초마다 업데이트 확인
 
-      console.log('🔥 Firebase 초기화 중...');
+if (ENABLE_FIREBASE_CACHE) {
+  console.log('🔥 Firebase Proxy 모드 활성화 (보안)');
 
-      // Firebase 앱 초기화
-      const app = initializeApp(FIREBASE_CONFIG);
-      const db = getDatabase(app);
+  // 폴링 함수
+  let isPolling = false;
 
-      // 키 플레이어 실시간 구독
-      const playersRef = ref(db, 'keyPlayers');
+  function pollFirebaseData() {
+    if (isPolling) return;
+    isPolling = true;
 
-      onValue(playersRef, (snapshot) => {
-        const data = snapshot.val();
+    google.script.run
+      .withSuccessHandler(response => {
+        isPolling = false;
 
-        if (data) {
-          // Firebase 데이터를 배열로 변환
-          const players = Object.values(data);
+        if (!response.success) {
+          console.warn('⚠️ Firebase 조회 실패, Sheets 데이터 사용');
+          return;
+        }
 
-          console.log('✅ Firebase 데이터 수신:', players.length, '명');
-          console.log('⚡ 로딩 시간: 즉시 (캐시)');
+        const players = response.data.players;
 
-          // 즉시 렌더링
+        console.log('✅ Firebase 데이터 수신 (Proxy):', players.length, '명');
+
+        // 기존 데이터와 비교 (변경사항 있을 때만 렌더링)
+        const currentHash = JSON.stringify(keyPlayers);
+        const newHash = JSON.stringify(players);
+
+        if (currentHash !== newHash) {
+          console.log('🔄 데이터 변경 감지, 렌더링 업데이트');
           keyPlayers = players;
           renderKeyPlayers(players);
-
-          // 화면 잠금 해제
-          unlockScreen();
-
-          // Firebase 모드 표시
-          const header = document.querySelector('header > div:first-child');
-          if (header && !header.textContent.includes('🔥')) {
-            header.innerHTML = '<strong>🎯 Tracker</strong> <span style="color:#fbbf24;font-size:0.8rem">🔥 Live</span>';
-          }
         }
-      }, (error) => {
-        console.error('❌ Firebase 에러:', error);
+
+        // 화면 잠금 해제
+        unlockScreen();
+
+        // Firebase 모드 표시
+        const header = document.querySelector('header > div:first-child');
+        if (header && !header.textContent.includes('🔥')) {
+          header.innerHTML = '<strong>🎯 Tracker</strong> <span style="color:#fbbf24;font-size:0.8rem">🔥 Proxy</span>';
+        }
+      })
+      .withFailureHandler(err => {
+        isPolling = false;
+        console.error('❌ Firebase Proxy 에러:', err);
         // Fallback: Google Sheets로 로드
         loadKeyPlayersFromSheets();
-      });
+      })
+      .getKeyPlayersFromFirebase();
+  }
 
-      console.log('✅ Firebase 실시간 구독 활성화');
-    });
+  // 첫 로드 및 주기적 폴링
+  window.addEventListener('load', () => {
+    pollFirebaseData(); // 즉시 로드
+
+    // 5초마다 폴링 (실시간 업데이트)
+    setInterval(pollFirebaseData, FIREBASE_POLLING_INTERVAL);
   });
 } else {
-  // Firebase 비활성화: Google Sheets 사용
   console.log('📊 Google Sheets 모드 (Firebase 비활성화)');
 }
 </script>
