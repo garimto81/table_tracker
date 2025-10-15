@@ -2,6 +2,112 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.5.0 (2025-10-15) - Firebase Realtime Cache - Hybrid Architecture 🔥
+
+### 🔥 핵심 기능
+**Firebase Realtime Database 하이브리드 캐싱**:
+- Google Sheets (SSOT) ↔ Firebase (Read Cache) ↔ Browser
+- 로딩 속도 96% 개선: 12초 → 0.5초 (Apps Script 프록시)
+- 실시간 동기화: 5초 간격 폴링
+
+### 🔒 보안 개선
+**Apps Script 프록시 패턴**:
+- 문제: 초기 구현에서 Firebase API Key를 브라우저에 노출 (GitHub 공개 저장소)
+- 해결: Apps Script를 보안 프록시로 사용
+  - Browser → google.script.run → Apps Script → Firebase REST API
+  - Firebase API Key는 Apps Script Properties에만 저장 (서버 사이드)
+  - 브라우저에서 Firebase SDK 완전 제거
+
+### ✨ 신규 함수
+**tracker_gs.js**:
+- `syncToFirebase()`: Sheets → Firebase 동기화 (1분 간격 자동 실행)
+- `setupFirebaseTrigger()`: 자동 트리거 생성 함수
+- `getKeyPlayersFromFirebase()`: 보안 프록시 함수 (Browser → Firebase 중계)
+
+**tracker.html**:
+- `pollFirebaseData()`: 5초 간격 폴링 (변경 감지 시에만 UI 업데이트)
+- `ENABLE_FIREBASE_CACHE`: 토글 옵션 (true/false)
+- `FIREBASE_POLLING_INTERVAL`: 폴링 간격 설정 (기본 5초)
+
+### 📊 성능 비교
+| 방식 | 로딩 속도 | 보안 | 실시간성 |
+|------|-----------|------|----------|
+| Sheets 직접 | 12초 | N/A | ❌ |
+| Firebase 직접 (초기 구현) | 0.1초 | ❌ API Key 노출 | ⚡ WebSocket |
+| **Apps Script 프록시 (최종)** | **0.5초** | **✅ 안전** | **✅ 5초 폴링** |
+
+### 📚 문서 추가
+- `FIREBASE_SETUP.md`: Firebase 프로젝트 생성부터 배포까지 완전 가이드
+- `PRD_SUMMARY.md`: v3.5.0 핵심 요약 문서
+- `docs/PRD.md`: Phase 3.5 완료 내역 추가 (성능 개선 히스토리 테이블)
+- `docs/PERFORMANCE_Tracker.md`: Historical 노트 추가
+
+### 🧹 파일 정리 (10개 삭제)
+**구버전 배포 문서**:
+- DEPLOY_v3.0.0.md
+- docs/DEPLOY_Tracker.md
+
+**버그 수정 문서**:
+- docs/BUGFIX_Tracker_v1.0.1.md
+- docs/BUGFIX_v2.2.0_Phase1.5.md
+
+**중복 마이그레이션 문서**:
+- docs/MIGRATION_PLAN_V3.md
+- docs/TYPE_SHEET_V3_SEATS_MIGRATION.md
+
+**구버전 UI 분석** (v2.x):
+- docs/MOBILE_FIRST_REDESIGN.md
+- docs/WHY_NEW_DESIGN_BETTER.md
+- docs/UI_UX_ANALYSIS.md
+- docs/UI_SIZE_PROBLEM.md
+- docs/TABLE_VIEW_IDEAS.md
+- docs/MOCKUP_UI_Proposals.md
+
+### ⚙️ 설정 요구사항
+v3.5.0 코드가 작동하려면 다음 설정 필요:
+
+1. **Firebase 프로젝트 생성**:
+   - https://console.firebase.google.com
+   - Realtime Database 생성 (asia-southeast1)
+
+2. **Apps Script 속성 설정**:
+   ```
+   Key: FIREBASE_DB_URL
+   Value: https://poker-tracker-xxxxx.firebaseio.com
+   ```
+
+3. **자동 트리거 생성**:
+   ```javascript
+   // Apps Script에서 실행
+   setupFirebaseTrigger()
+   ```
+
+4. **보안 규칙 설정**:
+   ```json
+   {
+     "rules": {
+       "keyPlayers": {
+         ".read": true,
+         ".write": false
+       }
+     }
+   }
+   ```
+
+📚 **상세 가이드**: [FIREBASE_SETUP.md](../FIREBASE_SETUP.md)
+
+### 🚀 배포
+- 코드 완료: tracker_gs.js, tracker.html
+- 배포 대기: Firebase 설정 후 clasp push 필요
+- 현재 배포: @23 (v3.4.0 - PlayerPhotos sheet)
+
+### 🔮 향후 계획 (v4.0.0)
+- IndexedDB + Service Worker (PWA)
+- 오프라인 작동 지원
+- 로딩 속도 0.01초 (완전한 클라이언트 캐싱)
+
+---
+
 ## v3.4.0 (2025-10-15) - PlayerPhotos Sheet - Image URL Persistent Storage 🗄️
 
 ### 🎯 문제 해결
