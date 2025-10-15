@@ -36,11 +36,9 @@ const VERSION = {
     'ROLLBACK_INFO.md': 'v3.0.1'
   },
   status: {
-    state: '🚀 개발 완료 (마이그레이션 대기)',
+    state: '✅ 배포 완료',
     phase: 'Phase 3.4.0 (PlayerPhotos 시트)',
-    blockers: [
-      '⚠️ migrateTypeSheetNToPlayerPhotos() 1회 실행 필요'
-    ],
+    blockers: [],
     lastCompleted: [
       '✅ PlayerPhotos 시트 관리 함수 추가 (v3.4.0)',
       '✅ 키 플레이어 뷰 이동 버튼 추가 (v3.3.1)',
