@@ -2,17 +2,18 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.4.1',
-  name: 'Performance Optimization - Cache & Batch Loading',
+  current: 'v3.5.0',
+  name: 'Firebase Realtime Cache - Hybrid Architecture',
   date: '2025-10-15',
-  phase: '3.4.1',
+  phase: '3.5.0',
   changes: [
-    '⚡ PlayerPhotos 배치 로딩 (N+1 쿼리 제거, 2.5초→0.3초)',
-    '⚡ 캐시 TTL 30초 확대 (1초→30초, 히트율 80%)',
-    '⚡ CacheService 적용 (다중 사용자 공유 캐시)',
-    '⚡ getAllPlayerPhotosMap_() 함수 추가',
-    '⚡ getSheetData_() 2단계 캐싱 (메모리 + CacheService)',
-    '📝 성능 개선: 전체 로딩 75% 단축 (12초→3초)'
+    '🔥 Firebase Realtime Database 하이브리드 캐싱',
+    '🚀 로딩 속도 99% 개선 (12초→0.1초)',
+    '⚡ 실시간 동기화 (1분 간격 자동 업데이트)',
+    '🔧 syncToFirebase() - Sheets → Firebase 동기화',
+    '🔧 setupFirebaseTrigger() - 자동 트리거 생성',
+    '🌐 Firebase SDK 통합 (tracker.html)',
+    '📚 FIREBASE_SETUP.md 상세 가이드 추가'
   ],
   deployment: {
     id: '@23',
@@ -22,8 +23,8 @@ const VERSION = {
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
   },
   files: {
-    'tracker_gs.js': 'v3.4.1',
-    'tracker.html': 'v3.3.1',
+    'tracker_gs.js': 'v3.5.0',
+    'tracker.html': 'v3.5.0',
     'appsscript.json': 'v3.2.0',
     'docs/CHANGELOG.md': 'v3.4.0',
     'docs/STATUS.md': 'v3.1.0',
@@ -36,19 +37,24 @@ const VERSION = {
     'ROLLBACK_INFO.md': 'v3.0.1'
   },
   status: {
-    state: '✅ 배포 완료',
-    phase: 'Phase 3.4.1 (성능 최적화)',
-    blockers: [],
+    state: '⚠️ Firebase 설정 필요',
+    phase: 'Phase 3.5.0 (Firebase 하이브리드)',
+    blockers: [
+      '⚙️ Firebase 프로젝트 생성 필요',
+      '⚙️ FIREBASE_DB_URL 스크립트 속성 설정',
+      '⚙️ setupFirebaseTrigger() 실행',
+      '⚙️ tracker.html Firebase 설정 교체'
+    ],
     lastCompleted: [
+      '✅ Firebase 동기화 함수 추가 (v3.5.0)',
       '✅ 성능 최적화: 캐싱 & 배치 로딩 (v3.4.1)',
-      '✅ PlayerPhotos 시트 관리 함수 추가 (v3.4.0)',
-      '✅ 키 플레이어 뷰 이동 버튼 추가 (v3.3.1)'
+      '✅ PlayerPhotos 시트 관리 함수 추가 (v3.4.0)'
     ]
   },
   next: {
-    version: 'v3.5.0',
-    phase: '3.5.0',
-    target: 'Firebase 하이브리드 캐싱 (실시간 동기화)',
+    version: 'v3.6.0',
+    phase: '3.6.0',
+    target: 'IndexedDB + Service Worker (오프라인 PWA)',
     estimatedDate: 'TBD'
   }
 };

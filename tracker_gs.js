@@ -13,11 +13,11 @@
 
 /* ===== 버전 관리 ===== */
 // version.js에서 버전 정보 로드 (Google Apps Script 환경)
-let TRACKER_VERSION = 'v3.4.1'; // Fallback version
+let TRACKER_VERSION = 'v3.5.0'; // Fallback version
 try {
   // version.js가 같은 프로젝트에 있다면 로드 시도
   // Google Apps Script는 require() 미지원이므로 수동 동기화 필요
-  TRACKER_VERSION = 'v3.4.1'; // version.js의 VERSION.current와 수동 동기화
+  TRACKER_VERSION = 'v3.5.0'; // version.js의 VERSION.current와 수동 동기화
 } catch (e) {
   Logger.log('version.js 로드 실패, fallback 버전 사용: ' + TRACKER_VERSION);
 }
@@ -624,6 +624,134 @@ function updateKeyPlayerPhoto(playerName, photoUrl) {
       return errorResponse_('updateKeyPlayerPhoto', e);
     }
   });
+}
+
+/* ===== Firebase 동기화 (Phase 3.5 - Realtime Cache) ===== */
+
+/**
+ * Firebase Realtime Database로 키 플레이어 동기화
+ * @return {Object} 동기화 결과
+ */
+function syncToFirebase() {
+  try {
+    log_(LOG_LEVEL.INFO, 'syncToFirebase', 'Firebase 동기화 시작');
+
+    // Firebase 설정 (스크립트 속성에서 로드)
+    const props = PropertiesService.getScriptProperties();
+    const firebaseUrl = props.getProperty('FIREBASE_DB_URL');
+    const firebaseSecret = props.getProperty('FIREBASE_SECRET');
+
+    if (!firebaseUrl) {
+      throw new Error('FIREBASE_DB_URL이 설정되지 않았습니다. 스크립트 속성에서 설정하세요.');
+    }
+
+    // 키 플레이어 데이터 가져오기
+    const response = getKeyPlayers();
+    if (!response.success) {
+      throw new Error('키 플레이어 조회 실패: ' + response.error.message);
+    }
+
+    const players = response.data.players;
+
+    // Firebase 형식으로 변환 (ID를 키로 사용)
+    const firebaseData = {};
+    players.forEach(p => {
+      const id = `T${p.tableNo}_S${p.seatNo}`;
+      firebaseData[id] = {
+        id: id,
+        pokerRoom: p.pokerRoom,
+        tableName: p.tableName,
+        tableNo: p.tableNo,
+        seatNo: p.seatNo,
+        playerName: p.playerName,
+        nationality: p.nationality,
+        chipCount: p.chipCount,
+        photoUrl: p.photoUrl || '',
+        updatedAt: new Date().toISOString()
+      };
+    });
+
+    // Firebase REST API로 데이터 쓰기 (PUT = 덮어쓰기)
+    const url = firebaseUrl + '/keyPlayers.json' + (firebaseSecret ? '?auth=' + firebaseSecret : '');
+    const payload = JSON.stringify(firebaseData);
+
+    const fetchResponse = UrlFetchApp.fetch(url, {
+      method: 'PUT',
+      contentType: 'application/json',
+      payload: payload,
+      muteHttpExceptions: true
+    });
+
+    const statusCode = fetchResponse.getResponseCode();
+
+    if (statusCode !== 200) {
+      throw new Error('Firebase 쓰기 실패: HTTP ' + statusCode);
+    }
+
+    log_(LOG_LEVEL.INFO, 'syncToFirebase', 'Firebase 동기화 완료', {
+      playerCount: players.length,
+      size: payload.length
+    });
+
+    return successResponse_({
+      synced: players.length,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (e) {
+    return errorResponse_('syncToFirebase', e);
+  }
+}
+
+/**
+ * Firebase 트리거 설정 (1분마다 자동 동기화)
+ *
+ * 실행 방법:
+ * 1. Apps Script 에디터에서 이 함수 실행
+ * 2. 권한 승인
+ * 3. 트리거가 자동으로 생성됨
+ */
+function setupFirebaseTrigger() {
+  try {
+    // 기존 트리거 삭제 (중복 방지)
+    const triggers = ScriptApp.getProjectTriggers();
+    triggers.forEach(trigger => {
+      if (trigger.getHandlerFunction() === 'syncToFirebase') {
+        ScriptApp.deleteTrigger(trigger);
+      }
+    });
+
+    // 새 트리거 생성 (1분마다)
+    ScriptApp.newTrigger('syncToFirebase')
+      .timeBased()
+      .everyMinutes(1)
+      .create();
+
+    Logger.log('✅ Firebase 트리거 설정 완료 (1분마다 동기화)');
+    return { success: true, message: 'Firebase 트리거 생성 완료' };
+
+  } catch (e) {
+    Logger.log('❌ 트리거 설정 실패: ' + e.message);
+    throw e;
+  }
+}
+
+/**
+ * Firebase 트리거 삭제
+ */
+function deleteFirebaseTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  let deletedCount = 0;
+
+  triggers.forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'syncToFirebase') {
+      ScriptApp.deleteTrigger(trigger);
+      deletedCount++;
+    }
+  });
+
+  Logger.log('✅ Firebase 트리거 ' + deletedCount + '개 삭제 완료');
+  return { success: true, deleted: deletedCount };
 }
 
 /* ===== 읽기 함수 ===== */

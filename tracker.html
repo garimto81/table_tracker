@@ -141,6 +141,75 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
   </div>
 </div>
 
+<!-- Firebase SDK (Phase 3.5 - Realtime Cache) -->
+<script type="module">
+/* ===== Firebase Configuration ===== */
+// TODO: Firebase Console에서 복사한 설정으로 교체
+const FIREBASE_CONFIG = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+// Firebase 활성화 플래그
+const ENABLE_FIREBASE = false; // true로 변경 시 Firebase 실시간 로딩 활성화
+
+if (ENABLE_FIREBASE && FIREBASE_CONFIG.apiKey !== "YOUR_API_KEY") {
+  // Firebase SDK 동적 import
+  import('https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js').then(({ initializeApp }) => {
+    import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js').then(({ getDatabase, ref, onValue }) => {
+
+      console.log('🔥 Firebase 초기화 중...');
+
+      // Firebase 앱 초기화
+      const app = initializeApp(FIREBASE_CONFIG);
+      const db = getDatabase(app);
+
+      // 키 플레이어 실시간 구독
+      const playersRef = ref(db, 'keyPlayers');
+
+      onValue(playersRef, (snapshot) => {
+        const data = snapshot.val();
+
+        if (data) {
+          // Firebase 데이터를 배열로 변환
+          const players = Object.values(data);
+
+          console.log('✅ Firebase 데이터 수신:', players.length, '명');
+          console.log('⚡ 로딩 시간: 즉시 (캐시)');
+
+          // 즉시 렌더링
+          keyPlayers = players;
+          renderKeyPlayers(players);
+
+          // 화면 잠금 해제
+          unlockScreen();
+
+          // Firebase 모드 표시
+          const header = document.querySelector('header > div:first-child');
+          if (header && !header.textContent.includes('🔥')) {
+            header.innerHTML = '<strong>🎯 Tracker</strong> <span style="color:#fbbf24;font-size:0.8rem">🔥 Live</span>';
+          }
+        }
+      }, (error) => {
+        console.error('❌ Firebase 에러:', error);
+        // Fallback: Google Sheets로 로드
+        loadKeyPlayersFromSheets();
+      });
+
+      console.log('✅ Firebase 실시간 구독 활성화');
+    });
+  });
+} else {
+  // Firebase 비활성화: Google Sheets 사용
+  console.log('📊 Google Sheets 모드 (Firebase 비활성화)');
+}
+</script>
+
 <script>
 /* ===== Version Management ===== */
 // version.js에서 버전 정보 로드 (브라우저 환경)
@@ -232,6 +301,11 @@ function showTableView(tableId) {
 
 /* ===== Key Player View ===== */
 function loadKeyPlayers() {
+  // Firebase가 활성화되면 이 함수는 호출되지 않음 (실시간 구독이 대체)
+  loadKeyPlayersFromSheets();
+}
+
+function loadKeyPlayersFromSheets() {
   const list = document.getElementById('keyPlayerList');
   list.innerHTML = '<div class="loading">로딩 중...</div>';
 
