@@ -2,6 +2,79 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.4.0 (2025-10-15) - PlayerPhotos Sheet - Image URL Persistent Storage 🗄️
+
+### 🎯 문제 해결
+**CSV 임포트 시 사진 URL 손실 방지**:
+- 기존 문제: Type 시트 전체 삭제 → N열 PhotoURL 데이터 손실
+- 해결: PlayerPhotos 시트에 플레이어별 사진 URL 영구 저장
+
+### 🗄️ 신규 시트: PlayerPhotos
+**구조**:
+```
+컬럼: [PlayerName, PhotoURL, CreatedAt, UpdatedAt]
+키: PlayerName (Unique)
+```
+
+**특징**:
+- 플레이어 이름당 1개 사진 URL (UPSERT)
+- CSV 임포트 시에도 데이터 보존
+- 타임스탬프 자동 기록 (생성/수정 시간)
+
+### ✨ 신규 함수
+**시트 관리**:
+- `ensurePlayerPhotosSheet_()`: PlayerPhotos 시트 자동 생성
+- `getPlayerPhotoUrl_(playerName)`: 사진 URL 조회
+- `setPlayerPhotoUrl_(playerName, url)`: 사진 URL UPSERT (생성/수정)
+
+**마이그레이션**:
+- `migrateTypeSheetNToPlayerPhotos()`: Type N열 → PlayerPhotos 일회성 마이그레이션
+
+### ♻️ 기존 함수 수정
+**JOIN 로직 추가**:
+- `getKeyPlayers()`: Type 시트 + PlayerPhotos JOIN
+  - Type 시트: 플레이어 위치/칩 (동적 데이터)
+  - PlayerPhotos: 사진 URL (정적 메타데이터)
+
+**저장 위치 변경**:
+- `uploadToImgur()`: Type N열 → PlayerPhotos 저장
+- `updateKeyPlayerPhoto()`: Type N열 → PlayerPhotos UPSERT
+
+### 🔄 마이그레이션 절차
+**Apps Script 에디터에서 1회 실행**:
+1. 함수 드롭다운: `migrateTypeSheetNToPlayerPhotos` 선택
+2. ▶️ 실행 버튼 클릭
+3. 로그 확인: "✅ ... URL 마이그레이션 완료"
+
+### 📊 데이터 흐름 (Before vs After)
+
+**Before (문제)**:
+```
+CSV 임포트 → Type 시트 전체 삭제 → PhotoURL 손실 ❌
+```
+
+**After (해결)**:
+```
+CSV 임포트 → Type 시트 갱신 (동적 데이터)
+              ↓
+        PlayerPhotos 보존 (사진 URL) ✅
+              ↓
+   getKeyPlayers() 시 자동 JOIN
+```
+
+### 🎯 이점
+- ✅ **데이터 손실 방지**: CSV 재임포트 시 사진 URL 보존
+- ✅ **정규화**: 플레이어별 1개 URL 관리 (중복 제거)
+- ✅ **확장성**: CreatedAt/UpdatedAt으로 이력 추적 가능
+- ✅ **후방 호환**: 기존 API 동작 유지
+
+### 📦 배포
+- clasp push 대기
+- 배포 ID: @23 (예정)
+- 마이그레이션 함수 실행 필요 ⚠️
+
+---
+
 ## v3.3.1 (2025-10-14) - Move Button to Key Player View 🔀
 
 ### ✨ 신규 기능

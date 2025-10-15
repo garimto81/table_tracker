@@ -2,29 +2,30 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.3.1',
-  name: 'Move Button to Key Player View',
-  date: '2025-10-14',
-  phase: '3.3.1',
+  current: 'v3.4.0',
+  name: 'PlayerPhotos Sheet - Image URL Persistent Storage',
+  date: '2025-10-15',
+  phase: '3.4.0',
   changes: [
-    '🔀 키 플레이어 뷰에 이동 버튼 추가',
-    '🎨 [📷 사진] + [🔀 이동] 버튼 가로 배치',
-    '🐛 오버레이 표시 버그 수정 (.active → .show)',
-    '📋 label htmlFor 속성 추가 (접근성 개선)',
-    '🔍 디버깅 로그 추가 (console.log)'
+    '🗄️ PlayerPhotos 시트 추가 (플레이어 사진 URL 영구 저장)',
+    '🔧 Type 시트 CSV 임포트 시 사진 URL 보존',
+    '♻️ getKeyPlayers() - PlayerPhotos JOIN 로직 추가',
+    '♻️ uploadToImgur() - PlayerPhotos에 자동 저장',
+    '♻️ updateKeyPlayerPhoto() - PlayerPhotos UPSERT',
+    '🔀 migrateTypeSheetNToPlayerPhotos() 마이그레이션 함수'
   ],
   deployment: {
-    id: '@22',
-    description: 'v3.3.1 - Move button in key player view',
+    id: '@23',
+    description: 'v3.4.0 - PlayerPhotos sheet for persistent photo storage',
     url: 'https://script.google.com/macros/s/AKfycbymegRGKIgLU_CdcORyMRRSBe1J5aunP1Bcs3--BKMQn1hJZh-fcZJgMNhs8CiZvu6tag/exec',
     scriptId: '17reWlyDY3W3aBsK9VYTnJ1C3iXnWhmzxOHJ-_s54S9QYje3COrwId38O',
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
   },
   files: {
-    'tracker_gs.js': 'v3.3.0',
+    'tracker_gs.js': 'v3.4.0',
     'tracker.html': 'v3.3.1',
     'appsscript.json': 'v3.2.0',
-    'docs/CHANGELOG.md': 'v3.3.1',
+    'docs/CHANGELOG.md': 'v3.4.0',
     'docs/STATUS.md': 'v3.1.0',
     'docs/PRD.md': 'v3.1.0',
     'docs/LLD.md': 'v2.4.0',
@@ -35,19 +36,21 @@ const VERSION = {
     'ROLLBACK_INFO.md': 'v3.0.1'
   },
   status: {
-    state: '✅ 배포 완료',
-    phase: 'Phase 3.3.1 (키 플레이어 이동 버튼)',
-    blockers: [],
+    state: '🚀 개발 완료 (마이그레이션 대기)',
+    phase: 'Phase 3.4.0 (PlayerPhotos 시트)',
+    blockers: [
+      '⚠️ migrateTypeSheetNToPlayerPhotos() 1회 실행 필요'
+    ],
     lastCompleted: [
+      '✅ PlayerPhotos 시트 관리 함수 추가 (v3.4.0)',
       '✅ 키 플레이어 뷰 이동 버튼 추가 (v3.3.1)',
-      '✅ 플레이어 이동 기능 (v3.3.0)',
-      '✅ 사진 업로드 UX 개선 (v3.2.1)'
+      '✅ 플레이어 이동 기능 (v3.3.0)'
     ]
   },
   next: {
-    version: 'v3.4.0',
-    phase: '3.4',
-    target: 'TBD',
+    version: 'v3.4.1',
+    phase: '3.4.1',
+    target: 'PlayerPhotos 성능 최적화 (캐싱)',
     estimatedDate: 'TBD'
   }
 };

@@ -13,17 +13,18 @@
 
 /* ===== 버전 관리 ===== */
 // version.js에서 버전 정보 로드 (Google Apps Script 환경)
-let TRACKER_VERSION = 'v2.2.0'; // Fallback version
+let TRACKER_VERSION = 'v3.4.0'; // Fallback version
 try {
   // version.js가 같은 프로젝트에 있다면 로드 시도
   // Google Apps Script는 require() 미지원이므로 수동 동기화 필요
-  TRACKER_VERSION = 'v2.2.0'; // version.js의 VERSION.current와 수동 동기화
+  TRACKER_VERSION = 'v3.4.0'; // version.js의 VERSION.current와 수동 동기화
 } catch (e) {
   Logger.log('version.js 로드 실패, fallback 버전 사용: ' + TRACKER_VERSION);
 }
 
 /* ===== 설정 ===== */
 const TYPE_SHEET_NAME = 'Type';
+const PLAYER_PHOTOS_SHEET_NAME = 'PlayerPhotos';  // Phase 3.3: 사진 URL 영구 저장
 const MAX_SEATS_PER_TABLE = 9;
 const CACHE_TTL = 1000; // 1초
 const MAX_LOCK_WAIT = 10000; // 10초
@@ -320,6 +321,120 @@ function errorResponse_(functionName, error) {
   };
 }
 
+/* ===== PlayerPhotos 시트 관리 (Phase 3.3) ===== */
+
+/**
+ * PlayerPhotos 시트 초기화 (없으면 생성)
+ * @return {Sheet} PlayerPhotos 시트 객체
+ */
+function ensurePlayerPhotosSheet_() {
+  const ss = appSS_();
+  let sheet = ss.getSheetByName(PLAYER_PHOTOS_SHEET_NAME);
+
+  if (!sheet) {
+    // 시트 생성
+    sheet = ss.insertSheet(PLAYER_PHOTOS_SHEET_NAME);
+
+    // 헤더 설정
+    const headers = ['PlayerName', 'PhotoURL', 'CreatedAt', 'UpdatedAt'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+    // 헤더 스타일 (굵게, 배경색)
+    const headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setFontWeight('bold');
+    headerRange.setBackground('#4285f4');
+    headerRange.setFontColor('#ffffff');
+
+    // 컬럼 너비 조정
+    sheet.setColumnWidth(1, 150); // PlayerName
+    sheet.setColumnWidth(2, 300); // PhotoURL
+    sheet.setColumnWidth(3, 180); // CreatedAt
+    sheet.setColumnWidth(4, 180); // UpdatedAt
+
+    log_(LOG_LEVEL.INFO, 'ensurePlayerPhotosSheet_', 'PlayerPhotos 시트 생성 완료');
+  }
+
+  return sheet;
+}
+
+/**
+ * PlayerPhotos 시트에서 사진 URL 조회
+ * @param {string} playerName - 플레이어 이름
+ * @return {string} 사진 URL (없으면 '')
+ */
+function getPlayerPhotoUrl_(playerName) {
+  try {
+    const sheet = ensurePlayerPhotosSheet_();
+    const lastRow = sheet.getLastRow();
+
+    if (lastRow < 2) return ''; // 데이터 없음
+
+    const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]).trim() === String(playerName).trim()) {
+        return String(data[i][1]).trim();
+      }
+    }
+
+    return ''; // 매칭 없음
+
+  } catch (e) {
+    log_(LOG_LEVEL.WARN, 'getPlayerPhotoUrl_', 'URL 조회 실패', { playerName, error: e.message });
+    return '';
+  }
+}
+
+/**
+ * PlayerPhotos 시트에 사진 URL 저장 (UPSERT)
+ * @param {string} playerName - 플레이어 이름
+ * @param {string} photoUrl - 사진 URL
+ * @return {boolean} 성공 여부
+ */
+function setPlayerPhotoUrl_(playerName, photoUrl) {
+  try {
+    const sheet = ensurePlayerPhotosSheet_();
+    const now = new Date().toISOString();
+    const validName = validatePlayerName_(playerName);
+    const validUrl = String(photoUrl || '').trim();
+
+    if (validUrl && !validUrl.startsWith('https://')) {
+      throw new Error('사진 URL은 HTTPS로 시작해야 합니다.');
+    }
+
+    const lastRow = sheet.getLastRow();
+    let targetRow = -1;
+
+    // 기존 행 찾기
+    if (lastRow >= 2) {
+      const names = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      for (let i = 0; i < names.length; i++) {
+        if (String(names[i][0]).trim() === validName) {
+          targetRow = i + 2;
+          break;
+        }
+      }
+    }
+
+    if (targetRow !== -1) {
+      // UPDATE: 기존 행 업데이트
+      sheet.getRange(targetRow, 2).setValue(validUrl);  // PhotoURL
+      sheet.getRange(targetRow, 4).setValue(now);       // UpdatedAt
+      log_(LOG_LEVEL.INFO, 'setPlayerPhotoUrl_', 'URL 업데이트', { playerName: validName, row: targetRow });
+    } else {
+      // INSERT: 새 행 추가
+      sheet.appendRow([validName, validUrl, now, now]);
+      log_(LOG_LEVEL.INFO, 'setPlayerPhotoUrl_', 'URL 추가', { playerName: validName });
+    }
+
+    return true;
+
+  } catch (e) {
+    log_(LOG_LEVEL.ERROR, 'setPlayerPhotoUrl_', 'URL 저장 실패', { playerName, error: e.message });
+    return false;
+  }
+}
+
 /* ===== 플레이어 사진 관리 (Phase 3.1-3.2) ===== */
 
 /**
@@ -379,17 +494,17 @@ function uploadToImgur(playerName, base64Image) {
 
       log_(LOG_LEVEL.INFO, 'uploadToImgur', '업로드 완료', { imgurUrl });
 
-      // Type 시트에 자동 저장
-      const updateResult = updateKeyPlayerPhoto(playerName, imgurUrl);
+      // PlayerPhotos 시트에 자동 저장 (Phase 3.3)
+      const saved = setPlayerPhotoUrl_(playerName, imgurUrl);
 
-      if (!updateResult.success) {
-        log_(LOG_LEVEL.WARN, 'uploadToImgur', 'URL 저장 실패', updateResult.error);
+      if (!saved) {
+        log_(LOG_LEVEL.WARN, 'uploadToImgur', 'PlayerPhotos 저장 실패');
       }
 
       return successResponse_({
         imgurUrl,
         deleteHash,
-        saved: updateResult.success
+        saved
       });
 
     } catch (e) {
@@ -399,7 +514,7 @@ function uploadToImgur(playerName, base64Image) {
 }
 
 /**
- * Type 시트 N열에 사진 URL 업데이트
+ * PlayerPhotos 시트에 사진 URL 업데이트 (Phase 3.3 리팩토링)
  * @param {string} playerName - 플레이어 이름
  * @param {string} photoUrl - HTTPS 사진 URL
  */
@@ -416,42 +531,14 @@ function updateKeyPlayerPhoto(playerName, photoUrl) {
         throw new Error('사진 URL은 HTTPS로 시작해야 합니다.');
       }
 
-      const ss = appSS_();
-      const sheet = ss.getSheetByName(TYPE_SHEET_NAME);
+      // PlayerPhotos 시트에 저장 (UPSERT)
+      const saved = setPlayerPhotoUrl_(validName, validUrl);
 
-      if (!sheet) {
-        throw new Error('Type 시트를 찾을 수 없습니다.');
+      if (!saved) {
+        throw new Error('PlayerPhotos 시트에 저장 실패');
       }
 
-      const { cols } = getSheetData_();
-      const lastRow = sheet.getLastRow();
-
-      // PlayerName 컬럼에서 해당 플레이어 찾기
-      if (lastRow < 2) {
-        throw new Error('Type 시트에 데이터가 없습니다.');
-      }
-
-      const playerNames = sheet.getRange(2, cols.playerName + 1, lastRow - 1, 1).getValues();
-      let targetRow = -1;
-
-      for (let i = 0; i < playerNames.length; i++) {
-        if (String(playerNames[i][0]).trim() === validName) {
-          targetRow = i + 2;
-          break;
-        }
-      }
-
-      if (targetRow === -1) {
-        throw new Error(`플레이어 "${validName}"를 찾을 수 없습니다.`);
-      }
-
-      // N열(cols.photoUrl + 1)에 사진 URL 쓰기
-      sheet.getRange(targetRow, cols.photoUrl + 1).setValue(validUrl);
-
-      // 캐시 무효화
-      invalidateCache_();
-
-      log_(LOG_LEVEL.INFO, 'updateKeyPlayerPhoto', '사진 URL 업데이트 완료', { row: targetRow });
+      log_(LOG_LEVEL.INFO, 'updateKeyPlayerPhoto', '사진 URL 업데이트 완료', { playerName: validName });
 
       return successResponse_({ playerName: validName, photoUrl: validUrl });
 
@@ -464,7 +551,7 @@ function updateKeyPlayerPhoto(playerName, photoUrl) {
 /* ===== 읽기 함수 ===== */
 
 /**
- * 키 플레이어 목록 반환 (사진 포함)
+ * 키 플레이어 목록 반환 (사진 포함, Phase 3.3 PlayerPhotos JOIN)
  */
 function getKeyPlayers() {
   try {
@@ -481,16 +568,9 @@ function getKeyPlayers() {
       })
       .map(row => {
         const playerName = String(row[cols.playerName] || '').trim();
-        const photoUrl = cols.photoUrl !== -1 ? String(row[cols.photoUrl] || '').trim() : '';
 
-        // 디버깅: 첫 번째 플레이어의 photoUrl 확인
-        if (playerName) {
-          log_(LOG_LEVEL.INFO, 'getKeyPlayers', `플레이어 "${playerName}"`, {
-            photoUrlIndex: cols.photoUrl,
-            photoUrlRaw: row[cols.photoUrl],
-            photoUrlProcessed: photoUrl
-          });
-        }
+        // PlayerPhotos 시트에서 사진 URL JOIN
+        const photoUrl = getPlayerPhotoUrl_(playerName);
 
         return {
           pokerRoom: cols.pokerRoom !== -1 ? validatePokerRoom_(row[cols.pokerRoom]) : '',
@@ -503,7 +583,7 @@ function getKeyPlayers() {
           playerName: playerName,
           nationality: cols.nationality !== -1 ? String(row[cols.nationality] || '').trim() : '',
           chipCount: cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0,
-          photoUrl: photoUrl  // N열에서 직접 읽기
+          photoUrl: photoUrl  // PlayerPhotos 시트에서 조회
         };
       })
       .filter(p => p.tableNo > 0 && p.seatNo > 0 && p.playerName);
@@ -1034,6 +1114,70 @@ function migrateAddPokerRoomColumns() {
     Logger.log(`📊 총 ${lastRow - 1}개 행에 기본값 설정 완료`);
 
     return { success: true, message: `컬럼 추가 완료 (${lastRow - 1}개 행)` };
+
+  } catch (err) {
+    Logger.log('❌ 에러:', err.message);
+    throw err;
+  }
+}
+
+/**
+ * [일회성] Type 시트 N열 데이터를 PlayerPhotos 시트로 마이그레이션 (Phase 3.3)
+ *
+ * 실행 순서:
+ * 1. Apps Script 에디터 (https://script.google.com) 접속
+ * 2. tracker_gs.js 파일 열기
+ * 3. 함수 드롭다운에서 "migrateTypeSheetNToPlayerPhotos" 선택
+ * 4. 실행 버튼 (▶️) 클릭
+ * 5. 로그 확인 (보기 → 로그)
+ *
+ * ⚠️ 주의: 이 함수는 1회만 실행하세요.
+ */
+function migrateTypeSheetNToPlayerPhotos() {
+  try {
+    const ss = SpreadsheetApp.openById(APP_SPREADSHEET_ID);
+    const typeSheet = ss.getSheetByName('Type');
+
+    if (!typeSheet) {
+      throw new Error('Type 시트를 찾을 수 없습니다.');
+    }
+
+    const typeLastRow = typeSheet.getLastRow();
+    if (typeLastRow < 2) {
+      Logger.log('⚠️ Type 시트에 데이터가 없습니다.');
+      return { success: true, message: 'Type 시트 데이터 없음' };
+    }
+
+    // PlayerPhotos 시트 초기화
+    ensurePlayerPhotosSheet_();
+
+    // Type 시트에서 PlayerName(E열=5)과 PhotoURL(N열=14) 읽기
+    const playerNameCol = 5;  // E열 (1-based)
+    const photoUrlCol = 14;   // N열 (1-based)
+
+    const playerNames = typeSheet.getRange(2, playerNameCol, typeLastRow - 1, 1).getValues();
+    const photoUrls = typeSheet.getRange(2, photoUrlCol, typeLastRow - 1, 1).getValues();
+
+    let migratedCount = 0;
+    const seen = new Set(); // 중복 방지
+
+    for (let i = 0; i < playerNames.length; i++) {
+      const playerName = String(playerNames[i][0] || '').trim();
+      const photoUrl = String(photoUrls[i][0] || '').trim();
+
+      if (playerName && photoUrl && !seen.has(playerName)) {
+        const saved = setPlayerPhotoUrl_(playerName, photoUrl);
+        if (saved) {
+          migratedCount++;
+          seen.add(playerName);
+        }
+      }
+    }
+
+    Logger.log(`✅ Type 시트 N열에서 PlayerPhotos로 ${migratedCount}개 URL 마이그레이션 완료`);
+    Logger.log('📋 다음 단계: CSV 임포트 시 Type 시트가 갱신되어도 사진 URL은 보존됩니다.');
+
+    return { success: true, message: `${migratedCount}개 URL 마이그레이션 완료` };
 
   } catch (err) {
     Logger.log('❌ 에러:', err.message);
