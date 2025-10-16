@@ -2,6 +2,155 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.5.2 (2025-01-16) - Key Player Number Badge & Introduction Checkbox 🏷️
+
+### 🏷️ 핵심 기능
+**키 플레이어 번호 뱃지 시스템**:
+- PlayerPhotos F열 (DisplayOrder) 추가: 1, 2, 3... 자동 번호 부여
+- 보라색 그라디언트 뱃지 UI (#667eea → #764ba2)
+- 플레이어 카드 왼쪽에 #1, #2, #3... 표시
+- 자동 순서 번호 부여 (배열 인덱스 + 1 fallback)
+
+**소개 체크박스 영구 보존**:
+- PlayerPhotos E열 (Introduction) 추가
+- 체크박스 데이터 Type 시트 독립적 저장
+- 플레이어 삭제 후에도 데이터 유지
+
+### 📊 PlayerPhotos 스키마 확장 (4열 → 6열)
+**자동 마이그레이션**:
+```
+기존 (v3.4.1):
+A: PlayerName
+B: PhotoURL
+C: CreatedAt
+D: UpdatedAt
+
+신규 (v3.5.2):
+A: PlayerName
+B: PhotoURL
+C: CreatedAt
+D: UpdatedAt
+E: Introduction     ← 추가
+F: DisplayOrder     ← 추가
+```
+
+**마이그레이션 로직**:
+- 4열 시트 감지 → E열 (Introduction) 자동 추가
+- 5열 시트 감지 → F열 (DisplayOrder) 자동 추가
+- 기존 데이터 보존 (CreatedAt, UpdatedAt 유지)
+
+### ✨ 신규/수정 함수
+**tracker_gs.js**:
+- `ensurePlayerPhotosSheet_()`: 6열 구조로 확장, 자동 마이그레이션 로직 추가
+- `getAllPlayerPhotosMap_()`: E/F열 데이터 읽기 (introduction, displayOrder)
+- `setPlayerPhotoUrl_()`: UPSERT 로직 업데이트 (6열 대응)
+- `updateIntroduction()`: PlayerPhotos E열에 데이터 저장 (Type 시트 독립)
+- `getKeyPlayers()`: displayOrder 필드 추가 (번호 뱃지용)
+
+**tracker.html**:
+- `renderKeyPlayers()`: 번호 뱃지 UI 추가
+- `badge.textContent = '#' + (p.displayOrder || 0)`: 보라색 그라디언트 스타일
+
+### 🎨 UI 개선
+**번호 뱃지 스타일**:
+```css
+.playerNumberBadge {
+  padding: 2px 8px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #fff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+```
+
+**플레이어 카드 레이아웃**:
+```
+[#1] Vadzim Lipauka
+[사진] 📍 Merit Hall | Ocean Blue | T31
+      S3 | 🇧🇾 BY | ┃520k┃
+      [칩 수정] [이동] [사진] [☑️ 소개]
+```
+
+### 🔧 기술 개선
+**배치 로딩 최적화**:
+- getAllPlayerPhotosMap_(): 6열 한 번에 읽기 (N+1 쿼리 방지)
+- 성능 유지: ~200ms (v3.4.1 대비 동일)
+
+**UPSERT 패턴**:
+```javascript
+if (targetRow !== -1) {
+  // UPDATE: B, D열 (PhotoURL, UpdatedAt)
+  sheet.getRange(targetRow, 2).setValue(validUrl);
+  sheet.getRange(targetRow, 4).setValue(now);
+} else {
+  // INSERT: 6열 전체 (A-F)
+  sheet.appendRow([validName, validUrl, now, now, false, 0]);
+}
+```
+
+### 📚 문서 업데이트
+- [version.js](../version.js): v3.5.1 → v3.5.2
+- [tracker_gs.js](../tracker_gs.js): TRACKER_VERSION 동기화
+- [docs/PRD.md](PRD.md): Phase 3.5.2 섹션 추가
+- [docs/PRD_SUMMARY.md](PRD_SUMMARY.md): 신규 작성 (빠른 참조 문서)
+- [docs/STATUS.md](STATUS.md): v3.5.2 완료 상태 업데이트
+
+### 🚀 배포
+- Git 커밋: `921e1fe` (feat: v3.5.2 - Number Badge & Introduction Checkbox)
+- Git 푸시: master 브랜치 완료
+- 배포 ID: @24 (코드 준비 완료)
+
+### 🔗 다음 단계
+**선택지**:
+1. **v3.6.0 - DisplayOrder 관리 UI** (추천, 2-3시간)
+   - Key Player View에서 번호 순서 변경 UI
+   - 드래그 앤 드롭 또는 ↑/↓ 버튼
+
+2. **v4.0.0 - Firebase 재구현** (장기, 1-2주)
+   - Firebase Realtime Database 직접 연동
+   - WebSocket 실시간 업데이트
+
+---
+
+## v3.5.1 (2025-01-16) - Performance Testing & Loading UX ⚡
+
+### ⚡ 핵심 기능
+**성능 측정 도구 추가**:
+- performance_test.js 신규 파일 생성
+- testPerformance() 서버 함수 구현
+- Sheets API 성능 측정 (getKeyPlayers, getAllPlayerPhotosMap_)
+
+**로딩 UX 개선**:
+- LoadingManager 통합 시스템
+- callServerWithLoading 헬퍼 함수
+- 플레이어 이동 시 로딩 오버레이 표시
+
+### 📊 성능 측정 결과
+- `getKeyPlayers()`: ~300ms
+- `getAllPlayerPhotosMap_()`: ~200ms
+- 총 로딩 시간: ~500ms (Sheets 기반, Firebase 제거 후)
+
+### 🧹 Firebase 제거
+**삭제된 코드 (166줄)**:
+- Firebase REST API 호출 로직 제거
+- syncToFirebase() 함수 삭제
+- getKeyPlayersFromFirebase() 프록시 함수 삭제
+- tracker.html 폴링 로직 제거
+
+**이유**: 보안 우선 결정 (Firebase API Key 노출 우려)
+
+### 📚 문서 추가
+- [docs/PERFORMANCE_TEST_GUIDE.md](PERFORMANCE_TEST_GUIDE.md): 성능 테스트 가이드
+
+### 🚀 배포
+- 배포 ID: @24
+- 상태: Sheets 기반 캐싱 (96% 성능 개선 유지)
+
+---
+
 ## v3.5.0 (2025-10-15) - Firebase Realtime Cache - Hybrid Architecture 🔥
 
 ### 🔥 핵심 기능

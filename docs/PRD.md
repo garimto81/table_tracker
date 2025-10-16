@@ -236,9 +236,85 @@
 
 ---
 
+## Phase 3.5.1: 성능 테스트 도구 (v3.5.1) ✅
+
+### 3.5.1 Performance Testing & Loading UX ✅ 완료
+- **근거**: Firebase 제거 후 성능 측정 도구 필요
+- **완료 내역**:
+  - [x] performance_test.js 추가 (Sheets API 성능 측정)
+  - [x] testPerformance() 서버 함수 구현
+  - [x] 플레이어 이동 로딩 UI 개선 (LoadingManager + callServerWithLoading)
+  - [x] 통합 로딩 시스템 (오버레이 + 스피너)
+- **성능 측정 결과**:
+  - getKeyPlayers(): ~300ms
+  - getAllPlayerPhotosMap_(): ~200ms
+  - 총 로딩 시간: ~500ms
+- **상태**: ✅ 완료 (v3.5.1)
+- **배포**: @24 (2025-01-16)
+- **문서**: [PERFORMANCE_TEST_GUIDE.md](PERFORMANCE_TEST_GUIDE.md)
+
+---
+
+## Phase 3.5.2: 키 플레이어 번호 뱃지 & 소개 체크박스 (v3.5.2) ✅
+
+### 3.5.2 Number Badge & Introduction Persistence ✅ 완료
+- **근거**:
+  - 키 플레이어 우선순위 시각화 (#1, #2, #3...)
+  - Introduction 체크박스 데이터 영구 보존
+- **PlayerPhotos 스키마 확장**:
+  ```
+  A: PlayerName
+  B: PhotoURL
+  C: CreatedAt
+  D: UpdatedAt
+  E: Introduction (체크박스 데이터)
+  F: DisplayOrder (번호 순서, 1부터 시작)
+  ```
+- **완료 내역**:
+  - [x] PlayerPhotos E열 추가 (Introduction checkbox)
+  - [x] PlayerPhotos F열 추가 (DisplayOrder)
+  - [x] 자동 마이그레이션 로직 (4열→5열→6열)
+  - [x] updateIntroduction() E열 연동
+  - [x] getAllPlayerPhotosMap_() 6열 배치 로딩
+  - [x] 번호 뱃지 UI (보라색 그라디언트 #667eea → #764ba2)
+  - [x] 자동 순서 번호 부여 (배열 인덱스 + 1 fallback)
+  - [x] setPlayerPhotoUrl_() UPSERT 로직 업데이트
+- **UI 개선**:
+  - 플레이어 카드 왼쪽에 #1, #2, #3... 뱃지 표시
+  - 20px x 20px 보라색 그라디언트 원형 뱃지
+  - Introduction 체크박스 데이터 플레이어 삭제 후에도 유지
+- **상태**: ✅ 완료 (v3.5.2)
+- **배포**: @24 (2025-01-16, 코드 준비 완료)
+- **의존성**: Phase 3.5.1
+
+---
+
 ## Phase 4: 향후 개선 사항 (v4.x 예정)
 
-### 4.1 테이블 검색/필터 🟢 Low
+### 4.0 Firebase Realtime Database + WebSocket (v4.0.0 예정) 🔴 High
+- **근거**: Firebase v3.5.0에서 제거됨, 실시간 동기화 재구현 필요
+- **목표 성능**: 로딩 0.1초, 실시간 업데이트 (폴링 제거)
+- **체크리스트**:
+  - [ ] Firebase 직접 연동 (Apps Script Proxy 제거)
+  - [ ] WebSocket 기반 실시간 업데이트
+  - [ ] IndexedDB 로컬 캐싱
+  - [ ] Service Worker PWA 지원
+  - [ ] Firebase Security Rules 설정
+- **예상**: v4.0.0 (TBD)
+- **의존성**: Phase 3.5.2
+
+### 4.1 DisplayOrder 관리 UI 🟡 Medium
+- **근거**: PlayerPhotos F열 수동 편집 불편
+- **성공**: 드래그 앤 드롭 또는 ↑/↓ 버튼으로 순서 변경
+- **체크리스트**:
+  - [ ] Key Player View: 순서 변경 모드 토글
+  - [ ] 드래그 앤 드롭 또는 위/아래 버튼
+  - [ ] updateDisplayOrder(playerName, newOrder) 서버 함수
+  - [ ] PlayerPhotos F열 자동 업데이트
+- **예상**: v3.6.0 (선택)
+- **의존성**: Phase 3.5.2
+
+### 4.2 테이블 검색/필터 🟢 Low
 - **근거**: 80개 테이블 중 특정 테이블 빠른 접근
 - **성공**: 테이블 검색 ≤ 5초
 - **체크리스트**:
@@ -248,57 +324,46 @@
 - **예상**: 1시간
 - **의존성**: 1.2 (Key Player View)
 
----
-
-### 4.2 칩리더 정렬 🟢 Low
+### 4.3 칩리더 정렬 🟢 Low
 - **근거**: 칩 리더 10명 빠른 확인
 - **체크리스트**:
   - [ ] Key Player View: [칩리더 ▼] 드롭다운
   - [ ] 정렬 옵션: 칩 많은 순, 칩 적은 순, 테이블 번호순
 
-### 4.3 테이블 일괄 칩 입력 🟡 Medium
+### 4.4 테이블 일괄 칩 입력 🟡 Medium
 - **근거**: 휴식 시간 칩 일괄 업데이트
 - **체크리스트**:
   - [ ] Table View: [일괄 칩 입력] 버튼
   - [ ] 오버레이: S1~S9 입력 필드
 
-### 4.4 IndexedDB + Service Worker (PWA) 🔵 Advanced
-- **근거**: 오프라인 지원, 완전한 클라이언트 캐싱
-- **예상 성능**: 로딩 0.01초, 오프라인 작동
-- **체크리스트**:
-  - [ ] Service Worker 등록 (캐시 전략)
-  - [ ] IndexedDB 스키마 설계
-  - [ ] Background Sync API (오프라인 → 온라인 동기화)
-  - [ ] manifest.json (PWA 설정)
-
 ---
 
 ## 🚫 제약사항
 
-### 기능적 제약 (v3.5.0)
-- **Firebase 수동 설정**: Firebase 프로젝트 생성 및 설정 필요 (FIREBASE_SETUP.md 참조)
-- **폴링 방식**: WebSocket 대신 5초 간격 폴링 (보안 우선)
+### 기능적 제약 (v3.5.2)
 - **키 플레이어 직접 등록 불가**: Type 시트에서 Keyplayer 컬럼 수동 TRUE 설정 필요
+- **DisplayOrder 수동 관리**: PlayerPhotos F열에서 번호 순서 수동 편집 필요 (UI 미지원)
+- **Firebase 제거됨**: v3.5.0-3.5.1에서 Firebase 코드 제거 (166줄 삭제), v4.0에서 재구현 예정
 
 ### 기술적 제약
-- **Google Sheets SSOT**: Firebase는 읽기 전용 캐시, 모든 쓰기는 Sheets 경유
-- **ScriptLock 직렬화**: 동시 사용자 대기 발생 가능 (Firebase로 읽기는 우회)
+- **Google Sheets SSOT**: 모든 데이터는 Sheets 기반 (읽기/쓰기)
+- **ScriptLock 직렬화**: 동시 사용자 대기 발생 가능
 - **모바일 최적화**: 393px 기준 (PC 미지원)
+- **버전 동기화**: tracker_gs.js TRACKER_VERSION 수동 업데이트 필요 (version.js 참조)
 
 ---
 
 ## 📊 성공 지표
 
-### PLAN 기준 (v3.5.0 달성)
-- [x] **키 플레이어 조회** ≤ 0.5초 (Firebase 프록시, 목표 15초 → 실제 0.5초)
+### PLAN 기준 (v3.5.2 달성)
+- [x] **키 플레이어 조회** ≤ 0.5초 (Sheets 캐싱, 목표 15초 → 실제 0.5초)
 - [x] **키 플레이어 칩 업데이트** ≤ 10초 (목표 15초 초과 달성)
 - [x] **신규 플레이어 등록** ≤ 20초
 - [x] **플레이어 삭제** ≤ 10초
 - [x] **Type 시트 동기화 성공률** ≥ 99%
 
-### 기술적 지표 (v3.5.0 달성)
-- [x] **Key Player View 로딩 (Firebase)** 0.5초 (목표 2초 대비 75% 개선)
-- [x] **Key Player View 로딩 (Sheets)** 12초 → 0.5초 (96% 개선)
+### 기술적 지표 (v3.5.2 달성)
+- [x] **Key Player View 로딩** ~500ms (Sheets + CacheService)
 - [x] **PlayerPhotos 배치 로딩** 2.5초 → 0.3초 (88% 개선)
 - [x] **Cache Hit Rate** 10% → 80% (8배 개선)
 - [x] **Table View 로딩** ≤ 1초
@@ -309,8 +374,10 @@
 |------|--------|--------|-------|--------|
 | v3.4.1 | PlayerPhotos 배치 | 2.5초 | 0.3초 | 88% |
 | v3.4.1 | Cache TTL 확장 | 10% | 80% | 8배 |
-| v3.5.0 | Firebase 하이브리드 | 12초 | 0.5초 | 96% |
-| **총계** | **전체 최적화** | **12초** | **0.5초** | **96%** |
+| v3.5.0 | Firebase 하이브리드 | 12초 | 0.1초 | 99% |
+| v3.5.1 | Firebase 제거 | 0.1초 | 0.5초 | -80% (보안 우선) |
+| v3.5.2 | PlayerPhotos 6열 확장 | - | - | 기능 추가 |
+| **현재** | **Sheets 기반** | **12초** | **0.5초** | **96%** |
 
 ---
 
