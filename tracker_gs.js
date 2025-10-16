@@ -1,11 +1,8 @@
-/** tracker_realtime.gs — Poker Tracker
+/**
+ * tracker_gs.gs - Poker Tracker (Google Apps Script)
  *
- * ⚠️ VERSION MANAGEMENT:
- * 버전 정보는 version.js에서 관리합니다.
- * 이 파일의 버전을 직접 수정하지 마세요.
- *
- * 현재 버전: version.js에서 자동 로드
- * 변경 이력: docs/CHANGELOG.md 참조
+ * VERSION: See version.js for current version
+ * Do not modify version here - use version.js instead
  *
  * @see version.js - SINGLE SOURCE OF TRUTH for version info
  * @see docs/CHANGELOG.md - Full version history
@@ -13,11 +10,11 @@
 
 /* ===== 버전 관리 ===== */
 // version.js에서 버전 정보 로드 (Google Apps Script 환경)
-let TRACKER_VERSION = 'v3.5.0'; // Fallback version
+let TRACKER_VERSION = 'v3.5.2'; // Fallback version
 try {
   // version.js가 같은 프로젝트에 있다면 로드 시도
   // Google Apps Script는 require() 미지원이므로 수동 동기화 필요
-  TRACKER_VERSION = 'v3.5.0'; // version.js의 VERSION.current와 수동 동기화
+  TRACKER_VERSION = 'v3.5.2'; // version.js의 VERSION.current와 수동 동기화
 } catch (e) {
   Logger.log('version.js 로드 실패, fallback 버전 사용: ' + TRACKER_VERSION);
 }
@@ -234,9 +231,10 @@ function getSheetData_(forceRefresh = false) {
 
   const data = readAll_Optimized_(sh);
 
-  // Seats.csv 기반 구조 (14개 컬럼) + Phase 3.1 PhotoURL
+  // Seats.csv 기반 구조 (14개 컬럼) + Phase 3.1 PhotoURL (Type 시트 N열은 레거시, 실제 사용은 PlayerPhotos)
   // K열 Keyplayer는 헤더 무관하게 인덱스 10으로 고정
-  // N열 PhotoURL은 헤더 무관하게 인덱스 13으로 고정
+  // N열 PhotoURL은 헤더 무관하게 인덱스 13으로 고정 (읽기 전용, PlayerPhotos 우선)
+  // Phase 3.5.1: Introduction은 PlayerPhotos 시트 C열에서 관리
   const cols = {
     pokerRoom: findColIndex_(data.header, ['PokerRoom', 'Poker Room', 'poker_room']),
     tableName: findColIndex_(data.header, ['TableName', 'Table Name', 'table_name']),
@@ -248,8 +246,8 @@ function getSheetData_(forceRefresh = false) {
     playerName: findColIndex_(data.header, ['PlayerName', 'Player Name', 'Players', 'Player', 'Name']),
     nationality: findColIndex_(data.header, ['Nationality', 'Nation', 'Country']),
     chipCount: findColIndex_(data.header, ['ChipCount', 'Chips', 'Stack', 'Starting Chips']),
-    keyplayer: 10,  // K열 고정 (헤더 이름 무관)
-    photoUrl: 13    // N열 고정 (Phase 3.1)
+    keyplayer: 10,     // K열 고정 (헤더 이름 무관)
+    photoUrl: 13       // N열 고정 (Phase 3.1, 레거시)
   };
 
   // 디버깅: 헤더와 첫 번째 데이터 행 확인
@@ -381,8 +379,8 @@ function ensurePlayerPhotosSheet_() {
     // 시트 생성
     sheet = ss.insertSheet(PLAYER_PHOTOS_SHEET_NAME);
 
-    // 헤더 설정
-    const headers = ['PlayerName', 'PhotoURL', 'CreatedAt', 'UpdatedAt'];
+    // 헤더 설정 (Phase 3.5.1: Introduction E열, Phase 3.5.2: DisplayOrder F열)
+    const headers = ['PlayerName', 'PhotoURL', 'CreatedAt', 'UpdatedAt', 'Introduction', 'DisplayOrder'];
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
     // 헤더 스타일 (굵게, 배경색)
@@ -396,8 +394,45 @@ function ensurePlayerPhotosSheet_() {
     sheet.setColumnWidth(2, 300); // PhotoURL
     sheet.setColumnWidth(3, 180); // CreatedAt
     sheet.setColumnWidth(4, 180); // UpdatedAt
+    sheet.setColumnWidth(5, 120); // Introduction
+    sheet.setColumnWidth(6, 100); // DisplayOrder
 
     log_(LOG_LEVEL.INFO, 'ensurePlayerPhotosSheet_', 'PlayerPhotos 시트 생성 완료');
+  }
+
+  // 기존 시트에 Introduction 컬럼 추가 (마이그레이션)
+  const lastCol = sheet.getLastColumn();
+  if (lastCol === 4) {
+    // E1 헤더 추가
+    sheet.getRange(1, 5).setValue('Introduction');
+    sheet.getRange(1, 5).setFontWeight('bold').setBackground('#4285f4').setFontColor('#ffffff');
+    sheet.setColumnWidth(5, 120);
+
+    // 기존 데이터 행에 기본값 false 설정
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      const defaultValues = Array(lastRow - 1).fill([false]);
+      sheet.getRange(2, 5, lastRow - 1, 1).setValues(defaultValues);
+    }
+
+    log_(LOG_LEVEL.INFO, 'ensurePlayerPhotosSheet_', 'Introduction 컬럼 마이그레이션 완료');
+  }
+
+  // Phase 3.5.2: DisplayOrder 컬럼 추가 (마이그레이션)
+  if (lastCol === 5) {
+    // F1 헤더 추가
+    sheet.getRange(1, 6).setValue('DisplayOrder');
+    sheet.getRange(1, 6).setFontWeight('bold').setBackground('#4285f4').setFontColor('#ffffff');
+    sheet.setColumnWidth(6, 100);
+
+    // 기존 데이터 행에 기본값 0 설정 (나중에 자동 할당)
+    const lastRow = sheet.getLastRow();
+    if (lastRow > 1) {
+      const defaultValues = Array(lastRow - 1).fill([0]);
+      sheet.getRange(2, 6, lastRow - 1, 1).setValues(defaultValues);
+    }
+
+    log_(LOG_LEVEL.INFO, 'ensurePlayerPhotosSheet_', 'DisplayOrder 컬럼 마이그레이션 완료');
   }
 
   return sheet;
@@ -405,23 +440,34 @@ function ensurePlayerPhotosSheet_() {
 
 /**
  * PlayerPhotos 시트 전체를 Map으로 배치 로딩 (Performance Optimization)
- * @return {Object} { playerName: photoUrl } Map
+ * @return {Object} { playerName: { photoUrl, introduction, displayOrder } } Map
  */
 function getAllPlayerPhotosMap_() {
   try {
     const sheet = ensurePlayerPhotosSheet_();
     const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
 
     if (lastRow < 2) return {}; // 데이터 없음
 
-    const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+    // A열(PlayerName), B열(PhotoURL), E열(Introduction), F열(DisplayOrder) 로딩
+    const colsToRead = Math.min(6, lastCol);
+    const data = sheet.getRange(2, 1, lastRow - 1, colsToRead).getValues();
     const photoMap = {};
 
     data.forEach(row => {
       const playerName = String(row[0] || '').trim();
       const photoUrl = String(row[1] || '').trim();
-      if (playerName && photoUrl) {
-        photoMap[playerName] = photoUrl;
+      // E열(인덱스 4)에서 Introduction 읽기
+      const introduction = row.length >= 5 && (row[4] === true || String(row[4]).toUpperCase() === 'TRUE');
+      // F열(인덱스 5)에서 DisplayOrder 읽기 (Phase 3.5.2)
+      const displayOrder = row.length >= 6 ? toInt_(row[5]) : 0;
+      if (playerName) {
+        photoMap[playerName] = {
+          photoUrl: photoUrl,
+          introduction: introduction,
+          displayOrder: displayOrder
+        };
       }
     });
 
@@ -496,12 +542,13 @@ function setPlayerPhotoUrl_(playerName, photoUrl) {
 
     if (targetRow !== -1) {
       // UPDATE: 기존 행 업데이트
-      sheet.getRange(targetRow, 2).setValue(validUrl);  // PhotoURL
-      sheet.getRange(targetRow, 4).setValue(now);       // UpdatedAt
+      sheet.getRange(targetRow, 2).setValue(validUrl);  // B열 PhotoURL
+      sheet.getRange(targetRow, 4).setValue(now);       // D열 UpdatedAt
       log_(LOG_LEVEL.INFO, 'setPlayerPhotoUrl_', 'URL 업데이트', { playerName: validName, row: targetRow });
     } else {
-      // INSERT: 새 행 추가
-      sheet.appendRow([validName, validUrl, now, now]);
+      // INSERT: 새 행 추가 (Phase 3.5.1: E열 Introduction 기본값 false)
+      // A: PlayerName, B: PhotoURL, C: CreatedAt, D: UpdatedAt, E: Introduction
+      sheet.appendRow([validName, validUrl, now, now, false]);
       log_(LOG_LEVEL.INFO, 'setPlayerPhotoUrl_', 'URL 추가', { playerName: validName });
     }
 
@@ -626,186 +673,11 @@ function updateKeyPlayerPhoto(playerName, photoUrl) {
   });
 }
 
-/* ===== Firebase 동기화 (Phase 3.5 - Realtime Cache) ===== */
-
-/**
- * Firebase에서 키 플레이어 데이터 읽기 (Proxy)
- * 브라우저에서 안전하게 Firebase 데이터를 가져오기 위한 프록시
- * @return {Object} 플레이어 데이터
- */
-function getKeyPlayersFromFirebase() {
-  try {
-    log_(LOG_LEVEL.INFO, 'getKeyPlayersFromFirebase', 'Firebase 데이터 조회 시작');
-
-    const props = PropertiesService.getScriptProperties();
-    const firebaseUrl = props.getProperty('FIREBASE_DB_URL');
-    const firebaseSecret = props.getProperty('FIREBASE_SECRET');
-
-    if (!firebaseUrl) {
-      // Firebase 설정 없으면 Sheets에서 직접 읽기
-      return getKeyPlayers();
-    }
-
-    // Firebase REST API로 읽기
-    const url = firebaseUrl + '/keyPlayers.json' + (firebaseSecret ? '?auth=' + firebaseSecret : '');
-
-    const response = UrlFetchApp.fetch(url, {
-      method: 'GET',
-      muteHttpExceptions: true
-    });
-
-    const statusCode = response.getResponseCode();
-
-    if (statusCode !== 200) {
-      log_(LOG_LEVEL.WARN, 'getKeyPlayersFromFirebase', 'Firebase 읽기 실패, Sheets 사용', { statusCode });
-      return getKeyPlayers(); // Fallback
-    }
-
-    const data = JSON.parse(response.getContentText());
-
-    if (!data) {
-      log_(LOG_LEVEL.WARN, 'getKeyPlayersFromFirebase', 'Firebase 데이터 없음, Sheets 사용');
-      return getKeyPlayers(); // Fallback
-    }
-
-    // Object를 Array로 변환
-    const players = Object.values(data);
-
-    log_(LOG_LEVEL.INFO, 'getKeyPlayersFromFirebase', 'Firebase 데이터 조회 완료', { count: players.length });
-
-    return successResponse_({ players, count: players.length });
-
-  } catch (e) {
-    log_(LOG_LEVEL.ERROR, 'getKeyPlayersFromFirebase', 'Firebase 조회 실패, Sheets 사용', { error: e.message });
-    return getKeyPlayers(); // Fallback
-  }
-}
-
-/**
- * Firebase Realtime Database로 키 플레이어 동기화
- * @return {Object} 동기화 결과
- */
-function syncToFirebase() {
-  try {
-    log_(LOG_LEVEL.INFO, 'syncToFirebase', 'Firebase 동기화 시작');
-
-    // Firebase 설정 (스크립트 속성에서 로드)
-    const props = PropertiesService.getScriptProperties();
-    const firebaseUrl = props.getProperty('FIREBASE_DB_URL');
-    const firebaseSecret = props.getProperty('FIREBASE_SECRET');
-
-    if (!firebaseUrl) {
-      throw new Error('FIREBASE_DB_URL이 설정되지 않았습니다. 스크립트 속성에서 설정하세요.');
-    }
-
-    // 키 플레이어 데이터 가져오기
-    const response = getKeyPlayers();
-    if (!response.success) {
-      throw new Error('키 플레이어 조회 실패: ' + response.error.message);
-    }
-
-    const players = response.data.players;
-
-    // Firebase 형식으로 변환 (ID를 키로 사용)
-    const firebaseData = {};
-    players.forEach(p => {
-      const id = `T${p.tableNo}_S${p.seatNo}`;
-      firebaseData[id] = {
-        id: id,
-        pokerRoom: p.pokerRoom,
-        tableName: p.tableName,
-        tableNo: p.tableNo,
-        seatNo: p.seatNo,
-        playerName: p.playerName,
-        nationality: p.nationality,
-        chipCount: p.chipCount,
-        photoUrl: p.photoUrl || '',
-        updatedAt: new Date().toISOString()
-      };
-    });
-
-    // Firebase REST API로 데이터 쓰기 (PUT = 덮어쓰기)
-    const url = firebaseUrl + '/keyPlayers.json' + (firebaseSecret ? '?auth=' + firebaseSecret : '');
-    const payload = JSON.stringify(firebaseData);
-
-    const fetchResponse = UrlFetchApp.fetch(url, {
-      method: 'PUT',
-      contentType: 'application/json',
-      payload: payload,
-      muteHttpExceptions: true
-    });
-
-    const statusCode = fetchResponse.getResponseCode();
-
-    if (statusCode !== 200) {
-      throw new Error('Firebase 쓰기 실패: HTTP ' + statusCode);
-    }
-
-    log_(LOG_LEVEL.INFO, 'syncToFirebase', 'Firebase 동기화 완료', {
-      playerCount: players.length,
-      size: payload.length
-    });
-
-    return successResponse_({
-      synced: players.length,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (e) {
-    return errorResponse_('syncToFirebase', e);
-  }
-}
-
-/**
- * Firebase 트리거 설정 (1분마다 자동 동기화)
- *
- * 실행 방법:
- * 1. Apps Script 에디터에서 이 함수 실행
- * 2. 권한 승인
- * 3. 트리거가 자동으로 생성됨
- */
-function setupFirebaseTrigger() {
-  try {
-    // 기존 트리거 삭제 (중복 방지)
-    const triggers = ScriptApp.getProjectTriggers();
-    triggers.forEach(trigger => {
-      if (trigger.getHandlerFunction() === 'syncToFirebase') {
-        ScriptApp.deleteTrigger(trigger);
-      }
-    });
-
-    // 새 트리거 생성 (1분마다)
-    ScriptApp.newTrigger('syncToFirebase')
-      .timeBased()
-      .everyMinutes(1)
-      .create();
-
-    Logger.log('✅ Firebase 트리거 설정 완료 (1분마다 동기화)');
-    return { success: true, message: 'Firebase 트리거 생성 완료' };
-
-  } catch (e) {
-    Logger.log('❌ 트리거 설정 실패: ' + e.message);
-    throw e;
-  }
-}
-
-/**
- * Firebase 트리거 삭제
- */
-function deleteFirebaseTrigger() {
-  const triggers = ScriptApp.getProjectTriggers();
-  let deletedCount = 0;
-
-  triggers.forEach(trigger => {
-    if (trigger.getHandlerFunction() === 'syncToFirebase') {
-      ScriptApp.deleteTrigger(trigger);
-      deletedCount++;
-    }
-  });
-
-  Logger.log('✅ Firebase 트리거 ' + deletedCount + '개 삭제 완료');
-  return { success: true, deleted: deletedCount };
-}
+/* ===== Firebase 통합 (향후 구현 예정) ===== */
+// TODO: Firebase Realtime Database 연동 (Phase 4.0)
+// - 실시간 데이터 동기화
+// - 브라우저 직접 읽기 (Apps Script Proxy 제거)
+// - WebSocket 기반 실시간 업데이트
 
 /* ===== 읽기 함수 ===== */
 
@@ -829,11 +701,14 @@ function getKeyPlayers() {
           String(row[cols.keyplayer]).toUpperCase() === 'TRUE';
         return isKey;
       })
-      .map(row => {
+      .map((row, index) => {
         const playerName = String(row[cols.playerName] || '').trim();
 
-        // [Performance] Map에서 즉시 조회 (시트 읽기 제거)
-        const photoUrl = photoMap[playerName] || '';
+        // [Performance] PlayerPhotos Map에서 photoUrl + introduction 즉시 조회
+        const playerData = photoMap[playerName] || { photoUrl: '', introduction: false, displayOrder: 0 };
+        const photoUrl = playerData.photoUrl || '';
+        const isIntroduced = playerData.introduction || false;
+        const displayOrder = playerData.displayOrder || (index + 1); // Phase 3.5.2: 자동 순서 번호
 
         return {
           pokerRoom: cols.pokerRoom !== -1 ? validatePokerRoom_(row[cols.pokerRoom]) : '',
@@ -846,7 +721,9 @@ function getKeyPlayers() {
           playerName: playerName,
           nationality: cols.nationality !== -1 ? String(row[cols.nationality] || '').trim() : '',
           chipCount: cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0,
-          photoUrl: photoUrl  // PlayerPhotos 시트에서 조회
+          photoUrl: photoUrl,           // PlayerPhotos 시트 B열
+          introduction: isIntroduced,   // PlayerPhotos 시트 E열 (Phase 3.5.1)
+          displayOrder: displayOrder    // PlayerPhotos 시트 F열 (Phase 3.5.2)
         };
       })
       .filter(p => p.tableNo > 0 && p.seatNo > 0 && p.playerName);
@@ -1251,6 +1128,57 @@ function batchUpdateChips(updates) {
 
     } catch (e) {
       return errorResponse_('batchUpdateChips', e);
+    }
+  });
+}
+
+/**
+ * 키 플레이어 소개 체크박스 업데이트 (Phase 3.5.1: PlayerPhotos 기반)
+ * @param {string} playerName - 플레이어 이름
+ * @param {boolean} isIntroduced - 소개 여부 (true=체크, false=미체크)
+ * @return {Object} 성공/실패 응답
+ */
+function updateIntroduction(playerName, isIntroduced) {
+  return withScriptLock_(() => {
+    try {
+      log_(LOG_LEVEL.INFO, 'updateIntroduction', '소개 상태 업데이트 시작', { playerName, isIntroduced });
+
+      const validName = validatePlayerName_(playerName);
+      const sheet = ensurePlayerPhotosSheet_();
+      const now = new Date().toISOString();
+      const lastRow = sheet.getLastRow();
+      let targetRow = -1;
+
+      // PlayerPhotos 시트에서 플레이어 찾기
+      if (lastRow >= 2) {
+        const names = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+        for (let i = 0; i < names.length; i++) {
+          if (String(names[i][0]).trim() === validName) {
+            targetRow = i + 2;
+            break;
+          }
+        }
+      }
+
+      if (targetRow !== -1) {
+        // UPDATE: 기존 행의 Introduction 업데이트
+        sheet.getRange(targetRow, 5).setValue(Boolean(isIntroduced));  // E열 Introduction
+        sheet.getRange(targetRow, 4).setValue(now);                    // D열 UpdatedAt
+        log_(LOG_LEVEL.INFO, 'updateIntroduction', 'Introduction 업데이트', { playerName: validName, row: targetRow });
+      } else {
+        // INSERT: 새 플레이어 추가 (PhotoURL 없이)
+        // A: PlayerName, B: PhotoURL, C: CreatedAt, D: UpdatedAt, E: Introduction
+        sheet.appendRow([validName, '', now, now, Boolean(isIntroduced)]);
+        log_(LOG_LEVEL.INFO, 'updateIntroduction', 'Introduction 추가', { playerName: validName });
+      }
+
+      invalidateCache_();
+
+      log_(LOG_LEVEL.INFO, 'updateIntroduction', '소개 상태 업데이트 완료');
+      return successResponse_();
+
+    } catch (e) {
+      return errorResponse_('updateIntroduction', e);
     }
   });
 }

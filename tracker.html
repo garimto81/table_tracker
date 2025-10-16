@@ -91,17 +91,38 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
 .chipsEditBtn{background:transparent;border:1px solid var(--acc);color:var(--acc);padding:var(--sp-xs) var(--sp-sm);border-radius:var(--sp-xs);font-size:1.1rem;cursor:pointer;font-weight:600;margin-left:auto}
 .photoEditBtn{background:transparent;border:1px solid #6b7280;color:#9aa3b2;padding:var(--sp-xs) var(--sp-sm);border-radius:var(--sp-xs);font-size:1.1rem;cursor:pointer;align-self:flex-start}
 
-/* === Loading === */
-.loading{text-align:center;padding:var(--sp-lg);color:var(--muted)}
+/* === Loading (Unified Overlay System) === */
 .error{background:#b91c1c;color:#ffe5e5;padding:var(--sp-md);border-radius:var(--sp-sm);margin-bottom:var(--sp-md);font-size:.9rem}
 
-/* === Screen Lock (Phase 3.2) === */
-#screenLock{position:fixed;inset:0;background:rgba(11,13,18,0.95);display:none;align-items:center;justify-content:center;z-index:200;pointer-events:all}
-#screenLock.active{display:flex}
-.lockContent{text-align:center;color:var(--text)}
-.lockSpinner{width:48px;height:48px;border:4px solid rgba(42,111,255,0.2);border-top-color:var(--acc);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto var(--sp-md)}
+/* Unified Loading Overlay */
+#screenLock{position:fixed;inset:0;background:rgba(11,13,18,0.95);display:none;align-items:center;justify-content:center;z-index:200;pointer-events:all;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#screenLock.active{display:flex;animation:fadeIn 0.2s ease-out}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.lockContent{text-align:center;color:var(--text);max-width:min(320px,90vw);padding:var(--sp-lg)}
+.lockSpinner{width:56px;height:56px;border:4px solid rgba(42,111,255,0.15);border-top-color:var(--acc);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto var(--sp-md)}
 @keyframes spin{to{transform:rotate(360deg)}}
-.lockText{font-size:1.4rem;font-weight:600;color:var(--muted)}
+.lockText{font-size:1.5rem;font-weight:600;color:var(--text);margin-bottom:var(--sp-sm)}
+.lockHint{font-size:1.1rem;color:var(--muted);margin-top:var(--sp-xs)}
+
+/* Progress Bar */
+.lockProgress{width:100%;height:6px;background:rgba(42,111,255,0.15);border-radius:3px;overflow:hidden;margin:var(--sp-md) 0;display:none}
+.lockProgress.show{display:block}
+.lockProgressBar{height:100%;background:linear-gradient(90deg,var(--acc),#4a8fff);transition:width 0.3s ease;border-radius:3px}
+.lockProgressText{font-size:1.2rem;color:var(--acc);font-weight:700;display:none}
+.lockProgressText.show{display:block}
+
+/* Cancel Button */
+.lockCancel{background:transparent;border:1px solid var(--red);color:var(--red);padding:var(--sp-sm) var(--sp-lg);border-radius:var(--sp-sm);font-size:1.3rem;cursor:pointer;margin-top:var(--sp-lg);display:none;transition:all 0.2s}
+.lockCancel.show{display:inline-block}
+.lockCancel:active{transform:scale(0.95)}
+
+/* Toast (Success/Error 간단 알림) */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--panel);color:var(--text);padding:var(--sp-md) var(--sp-lg);border-radius:var(--sp-md);border:1px solid var(--line);font-size:1.3rem;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:300;opacity:0;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);max-width:90vw}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.success{border-color:var(--green);background:linear-gradient(135deg,var(--panel),rgba(34,197,94,0.1))}
+.toast.error{border-color:var(--red);background:linear-gradient(135deg,var(--panel),rgba(239,68,68,0.1))}
+.toast.warning{border-color:#f59e0b;background:linear-gradient(135deg,var(--panel),rgba(245,158,11,0.1))}
 </style>
 </head>
 <body>
@@ -133,11 +154,17 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
   </div>
 </div>
 
-<!-- Screen Lock (Phase 3.2) -->
+<!-- Unified Loading Overlay -->
 <div id="screenLock">
   <div class="lockContent">
     <div class="lockSpinner"></div>
-    <div class="lockText">사진 저장 중...</div>
+    <div class="lockText">로딩 중...</div>
+    <div class="lockHint"></div>
+    <div class="lockProgress">
+      <div class="lockProgressBar" style="width:0%"></div>
+    </div>
+    <div class="lockProgressText">0%</div>
+    <button class="lockCancel">취소</button>
   </div>
 </div>
 
@@ -313,40 +340,28 @@ function loadKeyPlayers() {
 
 function loadKeyPlayersFromSheets() {
   const list = document.getElementById('keyPlayerList');
-  list.innerHTML = '<div class="loading">로딩 중...</div>';
+
+  // 로딩 표시 (단일 오버레이)
+  LoadingManager.show({
+    message: '키 플레이어 로딩 중',
+    hint: '잠시만 기다려주세요',
+    timeout: 30000
+  });
 
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error';
-        errorDiv.textContent = '에러: ' + (response.error?.message || '데이터 로드 실패');
-        list.innerHTML = '';
-        list.appendChild(errorDiv);
+        LoadingManager.hide('error', '데이터 로드 실패: ' + (response.error?.message || '알 수 없는 오류'));
         return;
       }
+
       const players = response.data.players;
-
-      // 디버깅: 첫 번째 플레이어 데이터 전체 출력
-      console.log('=== getKeyPlayers 응답 ===');
-      console.log('전체 플레이어 수:', players.length);
-      if (players.length > 0) {
-        console.log('첫 번째 플레이어 데이터:', players[0]);
-        console.log('photoUrl 필드:', players[0].photoUrl);
-        console.log('photoUrl 타입:', typeof players[0].photoUrl);
-      }
-
       keyPlayers = players;
       renderKeyPlayers(players);
-      unlockScreen(); // 렌더링 완료 후 화면 잠금 해제
+      LoadingManager.hide(); // 렌더링 완료 후 숨김 (토스트 없음)
     })
     .withFailureHandler(err => {
-      const errorDiv = document.createElement('div');
-      errorDiv.className = 'error';
-      errorDiv.textContent = '에러: ' + err.message;
-      list.innerHTML = '';
-      list.appendChild(errorDiv);
-      unlockScreen(); // 에러 시에도 해제
+      LoadingManager.hide('error', '네트워크 오류: ' + err.message);
     })
     .getKeyPlayers();
 }
@@ -385,9 +400,33 @@ function renderKeyPlayers(players) {
     const playerDetails = document.createElement('div');
     playerDetails.className = 'playerDetailsPro';
 
+    // Phase 3.5.2: 번호 뱃지 + 플레이어 이름을 함께 표시
     const playerName = document.createElement('div');
     playerName.className = 'playerNamePro';
-    playerName.textContent = p.playerName;
+    playerName.style.display = 'flex';
+    playerName.style.alignItems = 'center';
+    playerName.style.gap = 'var(--sp-xs)';
+
+    // 번호 뱃지
+    const badge = document.createElement('span');
+    badge.className = 'playerNumberBadge';
+    badge.textContent = '#' + (p.displayOrder || 0);
+    badge.style.display = 'inline-block';
+    badge.style.padding = '2px 8px';
+    badge.style.fontSize = '0.9rem';
+    badge.style.fontWeight = 'bold';
+    badge.style.color = '#fff';
+    badge.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    badge.style.borderRadius = '12px';
+    badge.style.minWidth = '32px';
+    badge.style.textAlign = 'center';
+
+    // 플레이어 이름 텍스트
+    const nameText = document.createElement('span');
+    nameText.textContent = p.playerName;
+
+    playerName.appendChild(badge);
+    playerName.appendChild(nameText);
 
     const playerMeta = document.createElement('div');
     playerMeta.className = 'playerMetaPro';
@@ -418,6 +457,7 @@ function renderKeyPlayers(players) {
     btnContainer.style.display = 'flex';
     btnContainer.style.gap = 'var(--sp-xs)';
     btnContainer.style.marginTop = 'var(--sp-xs)';
+    btnContainer.style.alignItems = 'center';
 
     const photoEditBtn = document.createElement('button');
     photoEditBtn.className = 'photoEditBtn';
@@ -429,8 +469,38 @@ function renderKeyPlayers(players) {
     moveBtn.style.borderColor = '#f59e0b';
     moveBtn.style.color = '#f59e0b';
 
+    // 소개 체크박스 (Phase 3.5.1)
+    const introLabel = document.createElement('label');
+    introLabel.style.display = 'flex';
+    introLabel.style.alignItems = 'center';
+    introLabel.style.gap = '6px';
+    introLabel.style.fontSize = '1.3rem';
+    introLabel.style.color = 'var(--text)';
+    introLabel.style.cursor = 'pointer';
+    introLabel.style.padding = 'var(--sp-xs) var(--sp-sm)';
+    introLabel.style.border = '1px solid #6b7280';
+    introLabel.style.borderRadius = 'var(--sp-xs)';
+    introLabel.style.background = 'transparent';
+
+    const introCheckbox = document.createElement('input');
+    introCheckbox.type = 'checkbox';
+    introCheckbox.checked = p.introduction || false;
+    introCheckbox.style.width = '20px';
+    introCheckbox.style.height = '20px';
+    introCheckbox.style.cursor = 'pointer';
+    introCheckbox.style.margin = '0';
+    introCheckbox.style.flexShrink = '0';
+
+    const introText = document.createElement('span');
+    introText.textContent = '소개';
+    introText.style.userSelect = 'none';
+
+    introLabel.appendChild(introCheckbox);
+    introLabel.appendChild(introText);
+
     btnContainer.appendChild(photoEditBtn);
     btnContainer.appendChild(moveBtn);
+    btnContainer.appendChild(introLabel);
 
     playerDetails.appendChild(playerName);
     playerDetails.appendChild(playerMeta);
@@ -453,6 +523,18 @@ function renderKeyPlayers(players) {
     moveBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       movePlayerPrompt(p.tableNo, p.seatNo, p.playerName);
+    });
+
+    // 소개 레이블 클릭 시 카드 이벤트 전파 방지
+    introLabel.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+
+    // 소개 체크박스 이벤트 (Phase 3.5.1)
+    introCheckbox.addEventListener('change', (e) => {
+      e.stopPropagation();
+      const isChecked = e.target.checked;
+      toggleIntroduction(p.playerName, isChecked);
     });
 
     if (p.photoUrl && p.photoUrl.trim()) {
@@ -504,27 +586,26 @@ function renderKeyPlayers(players) {
 /* ===== Table View ===== */
 function loadTablePlayers(tableId) {
   const list = document.getElementById('tablePlayerList');
-  list.innerHTML = '<div class="loading">로딩 중...</div>';
+
+  // 로딩 표시 (단일 오버레이)
+  LoadingManager.show({
+    message: '테이블 ' + formatTableNo(tableId) + ' 로딩 중',
+    timeout: 30000
+  });
 
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error';
-        errorDiv.textContent = '에러: ' + (response.error?.message || '데이터 로드 실패');
-        list.innerHTML = '';
-        list.appendChild(errorDiv);
+        LoadingManager.hide('error', '데이터 로드 실패: ' + (response.error?.message || '알 수 없는 오류'));
         return;
       }
+
       const players = response.data.players;
       renderTablePlayers(tableId, players);
+      LoadingManager.hide(); // 렌더링 완료 후 숨김 (토스트 없음)
     })
     .withFailureHandler(err => {
-      const errorDiv = document.createElement('div');
-      errorDiv.className = 'error';
-      errorDiv.textContent = '에러: ' + err.message;
-      list.innerHTML = '';
-      list.appendChild(errorDiv);
+      LoadingManager.hide('error', '네트워크 오류: ' + err.message);
     })
     .getTablePlayers(tableId);
 }
@@ -672,38 +753,26 @@ function editChips(tableId, seatNo, currentChips, playerName) {
 function confirmEditChips(tableId, seatNo, oldChips) {
   const input = document.getElementById('chipInput').value.trim();
   if (!input) {
-    alert('칩을 입력하세요.');
+    LoadingManager.showToast('칩을 입력하세요', 'warning');
     return;
   }
 
   const newChips = parseChips(input);
   if (newChips === null || newChips < 0) {
-    alert('올바른 숫자를 입력하세요 (예: 750000 또는 750k)');
+    LoadingManager.showToast('올바른 숫자를 입력하세요 (예: 750k)', 'warning');
     return;
   }
 
   closeOverlay();
-  showLoading();
 
-  google.script.run
-    .withSuccessHandler(response => {
-      if (!response.success) {
-        alert('에러: ' + (response.error?.message || '칩 수정 실패'));
-        hideLoading();
-        return;
-      }
-      saveChipHistory(tableId, seatNo, newChips);
-      if (currentView === 'key') {
-        loadKeyPlayers();
-      } else {
-        loadTablePlayers(currentTableId);
-      }
-    })
-    .withFailureHandler(err => {
-      alert('에러: ' + err.message);
-      hideLoading();
-    })
-    .updatePlayerChips(tableId, seatNo, newChips);
+  // 재사용 헬퍼 함수 사용
+  callServerWithLoading({
+    action: 'updatePlayerChips',
+    params: [tableId, seatNo, newChips],
+    loadingMessage: '칩 업데이트 중',
+    successMessage: '✅ 칩이 수정되었습니다',
+    onSuccess: () => saveChipHistory(tableId, seatNo, newChips)
+  });
 }
 
 /* ===== Add Player ===== */
@@ -794,72 +863,48 @@ function confirmAddPlayer(tableId, seatNo) {
   const chipsInput = document.getElementById('chipsInput').value.trim();
   const isKey = document.getElementById('keyInput').checked;
 
+  // 입력 검증 (Toast로 변경)
   if (!name) {
-    alert('이름을 입력하세요.');
+    LoadingManager.showToast('이름을 입력하세요', 'warning');
     return;
   }
   if (!nation) {
-    alert('국가 코드를 입력하세요.');
+    LoadingManager.showToast('국가 코드를 입력하세요', 'warning');
     return;
   }
   if (!chipsInput) {
-    alert('칩을 입력하세요.');
+    LoadingManager.showToast('칩을 입력하세요', 'warning');
     return;
   }
 
   const chips = parseChips(chipsInput);
   if (chips === null || chips < 0) {
-    alert('올바른 칩 숫자를 입력하세요.');
+    LoadingManager.showToast('올바른 칩 숫자를 입력하세요', 'warning');
     return;
   }
 
   closeOverlay();
-  showLoading();
 
-  google.script.run
-    .withSuccessHandler(response => {
-      if (!response.success) {
-        alert('에러: ' + (response.error?.message || '플레이어 추가 실패'));
-        hideLoading();
-        return;
-      }
-      if (currentView === 'key' && isKey) {
-        loadKeyPlayers();
-      } else {
-        loadTablePlayers(currentTableId);
-      }
-    })
-    .withFailureHandler(err => {
-      alert('에러: ' + err.message);
-      hideLoading();
-    })
-    .addPlayer(tableId, seatNo, name, nation, chips, isKey);
+  // 재사용 헬퍼 함수 사용
+  callServerWithLoading({
+    action: 'addPlayer',
+    params: [tableId, seatNo, name, nation, chips, isKey],
+    loadingMessage: '플레이어 추가 중',
+    successMessage: '✅ ' + name + ' 플레이어가 추가되었습니다'
+  });
 }
 
 /* ===== Delete Player ===== */
 function deletePlayerConfirm(tableId, seatNo, playerName) {
   if (!confirm(seatNo + ' ' + playerName + ' 삭제하시겠습니까?')) return;
 
-  showLoading();
-
-  google.script.run
-    .withSuccessHandler(response => {
-      if (!response.success) {
-        alert('에러: ' + (response.error?.message || '플레이어 삭제 실패'));
-        hideLoading();
-        return;
-      }
-      if (currentView === 'key') {
-        loadKeyPlayers();
-      } else {
-        loadTablePlayers(currentTableId);
-      }
-    })
-    .withFailureHandler(err => {
-      alert('에러: ' + err.message);
-      hideLoading();
-    })
-    .removePlayer(tableId, seatNo);
+  // 재사용 헬퍼 함수 사용
+  callServerWithLoading({
+    action: 'removePlayer',
+    params: [tableId, seatNo],
+    loadingMessage: playerName + ' 삭제 중',
+    successMessage: '✅ ' + playerName + ' 플레이어가 삭제되었습니다'
+  });
 }
 
 /* ===== Move Player (Phase 3.3) ===== */
@@ -966,50 +1011,64 @@ function confirmMovePlayer(fromTableNo, fromSeatNo, playerName) {
 
   console.log('📍 목적지:', { toTableNo, toSeatNo });
 
+  // 입력 검증 (Toast로 변경)
   if (!toTableNo || toTableNo < 1) {
-    alert('목적지 테이블 번호를 입력하세요.');
+    LoadingManager.showToast('목적지 테이블 번호를 입력하세요', 'warning');
     return;
   }
 
   if (!toSeatNo || toSeatNo < 1 || toSeatNo > 9) {
-    alert('목적지 좌석 번호를 1-9 사이로 입력하세요.');
+    LoadingManager.showToast('목적지 좌석 번호를 1-9 사이로 입력하세요', 'warning');
     return;
   }
 
   if (fromTableNo === toTableNo && fromSeatNo === toSeatNo) {
-    alert('출발지와 목적지가 동일합니다.');
+    LoadingManager.showToast('출발지와 목적지가 동일합니다', 'warning');
     return;
   }
 
   closeOverlay();
-  showLoading();
 
-  console.log('🚀 movePlayer 서버 함수 호출 시작');
+  // 이동 작업 전체 동안 로딩 유지
+  console.log('⏳ [1/4] 로딩 시작');
+  LoadingManager.show({
+    message: playerName + ' 이동 중...',
+    hint: 'T' + fromTableNo + ' S' + fromSeatNo + ' → T' + toTableNo + ' S' + toSeatNo,
+    timeout: 30000
+  });
 
+  console.log('📡 [2/4] 서버 함수 호출: movePlayer');
   google.script.run
     .withSuccessHandler(response => {
-      console.log('✅ movePlayer 서버 응답:', response);
-      hideLoading();
-
       if (!response.success) {
-        console.error('❌ 이동 실패:', response.error);
-        alert('에러: ' + (response.error?.message || '플레이어 이동 실패'));
+        console.log('❌ [X] 서버 에러:', response.error?.message);
+        LoadingManager.hide('error', '에러: ' + (response.error?.message || '이동 실패'));
         return;
       }
 
-      alert('✅ ' + playerName + '를 T' + toTableNo + ' S' + toSeatNo + '로 이동했습니다.');
+      console.log('✅ [3/4] 서버 작업 완료, 화면 새로고침 시작');
+      LoadingManager.show({
+        message: '화면 갱신 중...',
+        hint: '최신 데이터 로딩'
+      });
 
-      // 현재 뷰 새로고침
+      // 새로고침 완료 후 로딩 숨김
+      const refreshCompleted = () => {
+        console.log('🎉 [4/4] 전체 작업 완료');
+        LoadingManager.hide('success', '✅ ' + playerName + '를 T' + toTableNo + ' S' + toSeatNo + '로 이동했습니다');
+      };
+
       if (currentView === 'key') {
         loadKeyPlayers();
+        setTimeout(refreshCompleted, 500); // 렌더링 대기
       } else {
         loadTablePlayers(currentTableId);
+        setTimeout(refreshCompleted, 500); // 렌더링 대기
       }
     })
     .withFailureHandler(err => {
-      console.error('❌ movePlayer 서버 에러:', err);
-      hideLoading();
-      alert('에러: ' + err.message);
+      console.log('❌ [X] 네트워크 에러:', err.message);
+      LoadingManager.hide('error', '네트워크 오류: ' + err.message);
     })
     .movePlayer(fromTableNo, fromSeatNo, toTableNo, toSeatNo);
 }
@@ -1105,13 +1164,14 @@ function confirmPhotoEdit(playerName) {
   const input = document.getElementById('photoUrlInput');
   let photoUrl = input.value.trim();
 
+  // 입력 검증 (Toast로 변경)
   if (!photoUrl) {
-    alert('사진 URL을 입력하세요.');
+    LoadingManager.showToast('사진 URL을 입력하세요', 'warning');
     return;
   }
 
   if (!photoUrl.startsWith('https://') && !photoUrl.startsWith('http://')) {
-    alert('HTTP(S)로 시작하는 URL을 입력하세요.');
+    LoadingManager.showToast('HTTP(S)로 시작하는 URL을 입력하세요', 'warning');
     return;
   }
 
@@ -1130,22 +1190,14 @@ function confirmPhotoEdit(playerName) {
   }
 
   closeOverlay();
-  showLoading();
 
-  google.script.run
-    .withSuccessHandler(response => {
-      if (!response.success) {
-        alert('에러: ' + (response.error?.message || '사진 업데이트 실패'));
-        hideLoading();
-        return;
-      }
-      loadKeyPlayers();
-    })
-    .withFailureHandler(err => {
-      alert('에러: ' + err.message);
-      hideLoading();
-    })
-    .updateKeyPlayerPhoto(playerName, photoUrl);
+  // 재사용 헬퍼 함수 사용
+  callServerWithLoading({
+    action: 'updateKeyPlayerPhoto',
+    params: [playerName, photoUrl],
+    loadingMessage: '사진 URL 저장 중',
+    successMessage: '✅ 사진이 저장되었습니다'
+  });
 }
 
 /* ===== Utilities ===== */
@@ -1272,126 +1324,79 @@ function handlePhotoCapture(e, playerName) {
 
   isUploading = true;
 
-  // 업로드 UI 업데이트
-  const photoTakeBtn = document.querySelector('.btnTakePhoto');
-  const photoUrlInput = document.getElementById('photoUrlInput');
-  const btnConfirm = document.querySelector('.overlayActions .btnConfirm');
-
-  if (photoTakeBtn) {
-    photoTakeBtn.disabled = true;
-    photoTakeBtn.textContent = '🔄 업로드 중...';
-    photoTakeBtn.style.opacity = '0.5';
-    photoTakeBtn.style.cursor = 'not-allowed';
-  }
-
-  if (btnConfirm) {
-    btnConfirm.disabled = true;
-    btnConfirm.style.opacity = '0.5';
-    btnConfirm.style.cursor = 'not-allowed';
-  }
-
-  if (photoUrlInput) {
-    photoUrlInput.disabled = true;
-    photoUrlInput.placeholder = '업로드 중... 잠시만 기다려주세요';
-  }
+  // 팝업 닫고 로딩 화면 표시 (진행률 바 + 취소 버튼)
+  closeOverlay();
+  LoadingManager.show({
+    message: '사진 업로드 중',
+    hint: '네트워크 상태에 따라 시간이 걸릴 수 있습니다',
+    progress: true,
+    cancelable: true,
+    timeout: 60000,
+    onCancel: () => {
+      isUploading = false;
+      LoadingManager.showToast('사진 업로드가 취소되었습니다', 'warning');
+    }
+  });
 
   const reader = new FileReader();
   reader.onload = function() {
-    // Base64 인코딩 (data:image/jpeg;base64, 제거)
     const base64 = reader.result.split(',')[1];
+
+    // 진행률 시뮬레이션 (Imgur API는 실제 진행률 미제공)
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+      progress += 8;
+      if (progress <= 80) {
+        LoadingManager.setProgress(progress);
+      }
+    }, 500);
 
     google.script.run
       .withSuccessHandler(response => {
+        clearInterval(progressInterval);
         isUploading = false;
 
-        // UI 복원
-        if (photoTakeBtn) {
-          photoTakeBtn.disabled = false;
-          photoTakeBtn.textContent = '📷 사진 촬영';
-          photoTakeBtn.style.opacity = '1';
-          photoTakeBtn.style.cursor = 'pointer';
-        }
-
-        if (btnConfirm) {
-          btnConfirm.disabled = false;
-          btnConfirm.style.opacity = '1';
-          btnConfirm.style.cursor = 'pointer';
-        }
-
-        if (photoUrlInput) {
-          photoUrlInput.disabled = false;
-          photoUrlInput.placeholder = 'https://i.imgur.com/abc123.jpg';
-        }
-
         if (response.success) {
-          if (photoUrlInput) {
-            photoUrlInput.value = response.data.imgurUrl;
-          }
+          LoadingManager.setProgress(100);
 
-          // 성공 시 즉시 저장하고 팝업 닫기 (alert 제거)
-          // 팝업 닫고 로딩 화면 표시
-          closeOverlay();
-          lockScreen(); // 화면 전체 잠금
-
-          // 자동 저장 (confirmPhotoEdit 로직 재사용)
+          // 자동 저장
           google.script.run
             .withSuccessHandler(saveResponse => {
               if (saveResponse.success) {
-                loadKeyPlayers(); // 키 플레이어 목록 새로고침 완료 후 자동 해제
+                LoadingManager.hide('success', '✅ 사진이 저장되었습니다');
+                loadKeyPlayers();
               } else {
-                unlockScreen();
-                alert('저장 실패: ' + (saveResponse.error?.message || '알 수 없는 오류'));
+                LoadingManager.hide('error', '저장 실패: ' + (saveResponse.error?.message || '알 수 없는 오류'));
               }
             })
             .withFailureHandler(err => {
-              unlockScreen();
-              alert('저장 에러: ' + err.message);
+              LoadingManager.hide('error', '저장 에러: ' + err.message);
             })
             .updateKeyPlayerPhoto(playerName, response.data.imgurUrl);
-
         } else {
-          alert('❌ 업로드 실패: ' + (response.error?.message || '알 수 없는 오류'));
+          LoadingManager.hide('error', '업로드 실패: ' + (response.error?.message || '알 수 없는 오류'));
         }
       })
       .withFailureHandler(err => {
+        clearInterval(progressInterval);
         isUploading = false;
 
-        // UI 복원
-        if (photoTakeBtn) {
-          photoTakeBtn.disabled = false;
-          photoTakeBtn.textContent = '📷 사진 촬영';
-          photoTakeBtn.style.opacity = '1';
-          photoTakeBtn.style.cursor = 'pointer';
+        // 에러 타입 분석
+        let errorMsg = '업로드 에러: ' + err.message;
+        if (err.message.includes('429')) {
+          errorMsg = 'Imgur 업로드 한도 초과. 1분 후 다시 시도하세요.';
+        } else if (err.message.includes('timeout')) {
+          errorMsg = '업로드 타임아웃. 네트워크 상태를 확인하세요.';
         }
 
-        if (btnConfirm) {
-          btnConfirm.disabled = false;
-          btnConfirm.style.opacity = '1';
-          btnConfirm.style.cursor = 'pointer';
-        }
-
-        if (photoUrlInput) {
-          photoUrlInput.disabled = false;
-          photoUrlInput.placeholder = 'https://i.imgur.com/abc123.jpg';
-        }
-
-        alert('❌ 에러: ' + err.message);
+        LoadingManager.hide('error', errorMsg);
       })
       .uploadToImgur(playerName, base64);
   };
 
   reader.onerror = function() {
     isUploading = false;
-
-    // UI 복원
-    if (photoTakeBtn) {
-      photoTakeBtn.disabled = false;
-      photoTakeBtn.textContent = '📷 사진 촬영';
-      photoTakeBtn.style.opacity = '1';
-      photoTakeBtn.style.cursor = 'pointer';
-    }
-
-    alert('❌ 파일 읽기 실패');
+    LoadingManager.hide('error', '파일 읽기 실패');
   };
 
   reader.readAsDataURL(file);
@@ -1412,23 +1417,263 @@ function hideLoading() {
   // 리렌더링으로 처리됨
 }
 
-/* ===== Screen Lock Functions (Phase 3.2) ===== */
-function lockScreen() {
-  const screenLock = document.getElementById('screenLock');
-  if (screenLock) {
-    screenLock.classList.add('active');
-    // body 스크롤 방지
+/* ===== Introduction Toggle (Phase 3.5.1) ===== */
+
+/**
+ * 키 플레이어 소개 체크박스 토글
+ * @param {string} playerName - 플레이어 이름
+ * @param {boolean} isChecked - 체크 여부
+ */
+function toggleIntroduction(playerName, isChecked) {
+  console.log('🔄 toggleIntroduction:', playerName, isChecked);
+
+  google.script.run
+    .withSuccessHandler(response => {
+      if (!response.success) {
+        LoadingManager.showToast('소개 상태 업데이트 실패: ' + (response.error?.message || '알 수 없는 오류'), 'error');
+        // 실패 시 체크박스 원래 상태로 복원 (화면 리프레시)
+        loadKeyPlayers();
+        return;
+      }
+
+      // 성공 토스트 (간단하게)
+      const status = isChecked ? '체크됨' : '해제됨';
+      LoadingManager.showToast('✅ ' + playerName + ' 소개 ' + status, 'success', 2000);
+    })
+    .withFailureHandler(err => {
+      LoadingManager.showToast('네트워크 오류: ' + err.message, 'error');
+      loadKeyPlayers(); // 실패 시 복원
+    })
+    .updateIntroduction(playerName, isChecked);
+}
+
+/* ===== Unified Loading Manager (Single UI Pattern) ===== */
+const LoadingManager = {
+  _active: false,
+  _timeoutId: null,
+  _cancelCallback: null,
+
+  /**
+   * 로딩 표시 (단일 통합 UI)
+   * @param {Object} options
+   * @param {string} options.message - 메인 메시지 (예: "데이터 로딩 중")
+   * @param {string} options.hint - 힌트 메시지 (예: "잠시만 기다려주세요")
+   * @param {boolean} options.progress - 진행률 바 표시 여부
+   * @param {number} options.timeout - 타임아웃 (ms, 0=무제한)
+   * @param {boolean} options.cancelable - 취소 버튼 표시 여부
+   * @param {Function} options.onCancel - 취소 버튼 클릭 시 콜백
+   */
+  show(options = {}) {
+    const {
+      message = '로딩 중...',
+      hint = '',
+      progress = false,
+      timeout = 30000,
+      cancelable = false,
+      onCancel = null
+    } = options;
+
+    const lock = document.getElementById('screenLock');
+    if (!lock) return;
+
+    // UI 업데이트
+    lock.querySelector('.lockText').textContent = message;
+    lock.querySelector('.lockHint').textContent = hint;
+
+    const progressEl = lock.querySelector('.lockProgress');
+    const progressTextEl = lock.querySelector('.lockProgressText');
+    const cancelBtn = lock.querySelector('.lockCancel');
+
+    // 진행률 바
+    if (progress) {
+      progressEl.classList.add('show');
+      progressTextEl.classList.add('show');
+      this.setProgress(0);
+    } else {
+      progressEl.classList.remove('show');
+      progressTextEl.classList.remove('show');
+    }
+
+    // 취소 버튼
+    if (cancelable && onCancel) {
+      cancelBtn.classList.add('show');
+      this._cancelCallback = onCancel;
+      cancelBtn.onclick = () => this._handleCancel();
+    } else {
+      cancelBtn.classList.remove('show');
+      cancelBtn.onclick = null;
+    }
+
+    // 화면 표시
+    lock.classList.add('active');
     document.body.style.overflow = 'hidden';
+    this._active = true;
+
+    // 타임아웃 설정
+    if (timeout > 0) {
+      this._timeoutId = setTimeout(() => this._handleTimeout(), timeout);
+    }
+  },
+
+  /**
+   * 로딩 숨김
+   * @param {string} result - 'success' | 'error' | null (알림 없음)
+   * @param {string} message - 결과 메시지
+   */
+  hide(result = null, message = '') {
+    const lock = document.getElementById('screenLock');
+    if (!lock) return;
+
+    // 타임아웃 취소
+    if (this._timeoutId) {
+      clearTimeout(this._timeoutId);
+      this._timeoutId = null;
+    }
+
+    // 화면 숨김
+    lock.classList.remove('active');
+    document.body.style.overflow = '';
+    this._active = false;
+    this._cancelCallback = null;
+
+    // 결과 토스트 표시
+    if (result && message) {
+      this.showToast(message, result);
+    }
+  },
+
+  /**
+   * 진행률 업데이트 (0-100)
+   */
+  setProgress(percent) {
+    if (!this._active) return;
+
+    const progressBar = document.querySelector('.lockProgressBar');
+    const progressText = document.querySelector('.lockProgressText');
+
+    if (progressBar) {
+      progressBar.style.width = percent + '%';
+    }
+    if (progressText) {
+      progressText.textContent = Math.round(percent) + '%';
+    }
+  },
+
+  /**
+   * 토스트 알림 (간단한 성공/실패 메시지)
+   * @param {string} message - 메시지
+   * @param {string} type - 'success' | 'error' | 'warning'
+   * @param {number} duration - 표시 시간 (ms)
+   */
+  showToast(message, type = 'success', duration = 3000) {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // 애니메이션
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  },
+
+  /**
+   * 타임아웃 처리 (30초 경과 시)
+   */
+  _handleTimeout() {
+    this.showToast('서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하세요.', 'warning', 5000);
+  },
+
+  /**
+   * 취소 버튼 처리
+   */
+  _handleCancel() {
+    if (this._cancelCallback) {
+      this._cancelCallback();
+    }
+    this.hide(null, '');
+  },
+
+  /**
+   * 현재 로딩 중인지 확인
+   */
+  isActive() {
+    return this._active;
   }
+};
+
+/* ===== Reusable Server Call Helper (코드 재사용 패턴) ===== */
+/**
+ * 서버 호출 공통 래퍼 (로딩 UI + 에러 처리 자동화)
+ * @param {Object} options
+ * @param {string} options.action - 서버 함수 이름 (예: 'updatePlayerChips')
+ * @param {Array} options.params - 서버 함수 파라미터 배열
+ * @param {string} options.loadingMessage - 로딩 메시지
+ * @param {string} options.successMessage - 성공 토스트 메시지 (null이면 표시 안함)
+ * @param {Function} options.onSuccess - 성공 시 추가 작업 (선택)
+ */
+function callServerWithLoading(options) {
+  const {
+    action,
+    params = [],
+    loadingMessage = '처리 중...',
+    successMessage = null,
+    onSuccess = null
+  } = options;
+
+  // 로딩 표시
+  LoadingManager.show({ message: loadingMessage, timeout: 30000 });
+
+  // 서버 함수 동적 호출
+  google.script.run
+    .withSuccessHandler(response => {
+      if (!response.success) {
+        LoadingManager.hide('error', '에러: ' + (response.error?.message || '작업 실패'));
+        return;
+      }
+
+      // 성공 처리
+      if (successMessage) {
+        LoadingManager.hide('success', successMessage);
+      } else {
+        LoadingManager.hide();
+      }
+
+      // 추가 작업 실행
+      if (onSuccess) {
+        onSuccess(response);
+      }
+
+      // 자동 새로고침
+      if (currentView === 'key') {
+        loadKeyPlayers();
+      } else {
+        loadTablePlayers(currentTableId);
+      }
+    })
+    .withFailureHandler(err => {
+      LoadingManager.hide('error', '네트워크 오류: ' + err.message);
+    })
+    [action](...params);
+}
+
+/* ===== Legacy API (기존 코드 호환성 유지) ===== */
+function showLoading() {
+  LoadingManager.show({ message: '처리 중...' });
+}
+
+function hideLoading() {
+  LoadingManager.hide();
+}
+
+function lockScreen() {
+  LoadingManager.show({ message: '사진 저장 중...' });
 }
 
 function unlockScreen() {
-  const screenLock = document.getElementById('screenLock');
-  if (screenLock) {
-    screenLock.classList.remove('active');
-    // body 스크롤 복원
-    document.body.style.overflow = '';
-  }
+  LoadingManager.hide();
 }
 </script>
 </body>
