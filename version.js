@@ -2,18 +2,16 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.5.2',
-  name: 'Key Player Number Badge & Introduction Checkbox',
+  current: 'v3.5.3',
+  name: 'English UI Translation',
   date: '2025-01-16',
-  phase: '3.5.2',
+  phase: '3.5.3',
   changes: [
-    '🏷️ 키 플레이어 번호 뱃지 추가 (#1, #2, #3...)',
-    '📊 PlayerPhotos F열 DisplayOrder 자동 관리',
-    '✅ 소개 체크박스 E열로 이동 (Introduction)',
-    '🎨 보라색 그라디언트 번호 뱃지 UI',
-    '🔄 자동 순서 번호 부여 시스템',
-    '📝 PlayerPhotos 시트 구조 확장 (A~F열)',
-    '⚡ getAllPlayerPhotosMap_() 성능 최적화'
+    '🌐 Complete English UI translation (tracker.html)',
+    '🔤 All Korean strings converted to English',
+    '📝 Updated button labels, messages, dialogs',
+    '✅ Maintains all functionality from v3.5.2',
+    '🎯 Improved international usability'
   ],
   deployment: {
     id: '@24',
@@ -24,10 +22,10 @@ const VERSION = {
   },
   files: {
     'tracker_gs.js': 'v3.5.2',
-    'tracker.html': 'v3.5.2',
+    'tracker.html': 'v3.5.3',
     'performance_test.js': 'v3.5.1',
     'appsscript.json': 'v3.2.0',
-    'version.js': 'v3.5.2',
+    'version.js': 'v3.5.3',
     'docs/CHANGELOG.md': 'v3.5.2',
     'docs/STATUS.md': 'v3.5.2',
     'docs/PRD.md': 'v3.5.0',
@@ -42,15 +40,15 @@ const VERSION = {
     'ROLLBACK_INFO.md': 'v3.0.1'
   },
   status: {
-    state: '✅ 안정 버전 (배포 완료)',
-    phase: 'Phase 3.5.2 (키 플레이어 번호 뱃지 & 체크박스)',
+    state: '✅ Stable version (Deployed)',
+    phase: 'Phase 3.5.3 (English UI Translation)',
     blockers: [],
     lastCompleted: [
-      '✅ 키 플레이어 번호 뱃지 추가 (v3.5.2)',
-      '✅ Introduction 체크박스 PlayerPhotos E열로 이동 (v3.5.2)',
-      '✅ DisplayOrder F열 자동 관리 (v3.5.2)',
-      '✅ 성능 테스트 도구 추가 (v3.5.1)',
-      '✅ 플레이어 이동 로딩 UX 개선 (v3.5.1)'
+      '✅ Complete English UI translation (v3.5.3)',
+      '✅ Key player number badge added (v3.5.2)',
+      '✅ Introduction checkbox moved to PlayerPhotos column E (v3.5.2)',
+      '✅ DisplayOrder column F auto-managed (v3.5.2)',
+      '✅ Performance testing tools added (v3.5.1)'
     ]
   },
   next: {

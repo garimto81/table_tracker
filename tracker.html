@@ -3,7 +3,7 @@
      ⚠️ Do not modify version here - use version.js instead
 -->
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
@@ -134,7 +134,7 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
 <div class="wrap">
   <!-- Key Player View -->
   <div id="viewKeyPlayers">
-    <div id="keyPlayerList" class="loading">로딩 중...</div>
+    <div id="keyPlayerList" class="loading">Loading...</div>
   </div>
 
   <!-- Table View -->
@@ -158,13 +158,13 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
 <div id="screenLock">
   <div class="lockContent">
     <div class="lockSpinner"></div>
-    <div class="lockText">로딩 중...</div>
+    <div class="lockText">Loading...</div>
     <div class="lockHint"></div>
     <div class="lockProgress">
       <div class="lockProgressBar" style="width:0%"></div>
     </div>
     <div class="lockProgressText">0%</div>
-    <button class="lockCancel">취소</button>
+    <button class="lockCancel">Cancel</button>
   </div>
 </div>
 
@@ -201,7 +201,7 @@ if (ENABLE_FIREBASE_CACHE) {
 
         const players = response.data.players;
 
-        console.log('✅ Firebase 데이터 수신 (Proxy):', players.length, '명');
+        console.log('✅ Firebase 데이터 수신 (Proxy):', players.length, ' players');
 
         // 기존 데이터와 비교 (변경사항 있을 때만 렌더링)
         const currentHash = JSON.stringify(keyPlayers);
@@ -280,7 +280,7 @@ function parseSeatNo(str) {
   return 0;
 }
 
-// 국가 코드 → 국가명 (40개국)
+// 국가 코드 → 국가 players (40개국)
 function getCountryName(code) {
   const map = {
     'KR': 'South Korea', 'US': 'USA', 'CN': 'China', 'JP': 'Japan', 'GB': 'England',
@@ -343,15 +343,15 @@ function loadKeyPlayersFromSheets() {
 
   // 로딩 표시 (단일 오버레이)
   LoadingManager.show({
-    message: '키 플레이어 로딩 중',
-    hint: '잠시만 기다려주세요',
+    message: 'Loading key players',
+    hint: 'Please wait',
     timeout: 30000
   });
 
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        LoadingManager.hide('error', '데이터 로드 실패: ' + (response.error?.message || '알 수 없는 오류'));
+        LoadingManager.hide('error', 'Failed to load data: ' + (response.error?.message || 'Unknown error'));
         return;
       }
 
@@ -361,7 +361,7 @@ function loadKeyPlayersFromSheets() {
       LoadingManager.hide(); // 렌더링 완료 후 숨김 (토스트 없음)
     })
     .withFailureHandler(err => {
-      LoadingManager.hide('error', '네트워크 오류: ' + err.message);
+      LoadingManager.hide('error', 'Network error: ' + err.message);
     })
     .getKeyPlayers();
 }
@@ -371,7 +371,7 @@ function renderKeyPlayers(players) {
   const countHeader = document.getElementById('keyCountHeader');
 
   if (players.length === 0) {
-    list.innerHTML = '<div class="muted small">키 플레이어가 없습니다.</div>';
+    list.innerHTML = '<div class="muted small">No key players</div>';
     countHeader.textContent = 'Key Players (0)';
     return;
   }
@@ -383,7 +383,7 @@ function renderKeyPlayers(players) {
     const card = document.createElement('div');
     card.className = 'keyPlayerCardPro';
 
-    // 국가명
+    // 국가 players
     const countryName = getCountryName(p.nationality);
 
     // 칩 쉼표 포맷
@@ -400,7 +400,7 @@ function renderKeyPlayers(players) {
     const playerDetails = document.createElement('div');
     playerDetails.className = 'playerDetailsPro';
 
-    // Phase 3.5.2: 번호 뱃지 + 플레이어 이름을 함께 표시
+    // Phase 3.5.2: 번호 뱃지 + 플레이어 Name을 함께 표시
     const playerName = document.createElement('div');
     playerName.className = 'playerNamePro';
     playerName.style.display = 'flex';
@@ -421,7 +421,7 @@ function renderKeyPlayers(players) {
     badge.style.minWidth = '32px';
     badge.style.textAlign = 'center';
 
-    // 플레이어 이름 텍스트
+    // 플레이어 Name 텍스트
     const nameText = document.createElement('span');
     nameText.textContent = p.playerName;
 
@@ -461,15 +461,15 @@ function renderKeyPlayers(players) {
 
     const photoEditBtn = document.createElement('button');
     photoEditBtn.className = 'photoEditBtn';
-    photoEditBtn.textContent = '📷 사진';
+    photoEditBtn.textContent = '📷 Photo';
 
     const moveBtn = document.createElement('button');
     moveBtn.className = 'photoEditBtn';
-    moveBtn.textContent = '🔀 이동';
+    moveBtn.textContent = '🔀 Move';
     moveBtn.style.borderColor = '#f59e0b';
     moveBtn.style.color = '#f59e0b';
 
-    // 소개 체크박스 (Phase 3.5.1)
+    // Introduction 체크박스 (Phase 3.5.1)
     const introLabel = document.createElement('label');
     introLabel.style.display = 'flex';
     introLabel.style.alignItems = 'center';
@@ -492,7 +492,7 @@ function renderKeyPlayers(players) {
     introCheckbox.style.flexShrink = '0';
 
     const introText = document.createElement('span');
-    introText.textContent = '소개';
+    introText.textContent = 'Intro';
     introText.style.userSelect = 'none';
 
     introLabel.appendChild(introCheckbox);
@@ -510,27 +510,27 @@ function renderKeyPlayers(players) {
     card.appendChild(photoContainer);
     card.appendChild(playerDetails);
 
-    // 카드 클릭 이벤트 (테이블 뷰로 이동)
+    // 카드 클릭 이벤트 (테이블 뷰로 Move)
     card.addEventListener('click', () => showTableView(p.tableNo));
 
-    // 사진 편집 버튼 이벤트 (DOM으로 안전하게 연결)
+    // Photo Edit 버튼 이벤트 (DOM으로 안전하게 연결)
     photoEditBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       editPlayerPhoto(p.playerName, p.photoUrl || '');
     });
 
-    // 이동 버튼 이벤트 (movePlayerPrompt 재사용)
+    // Move 버튼 이벤트 (movePlayerPrompt 재사용)
     moveBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       movePlayerPrompt(p.tableNo, p.seatNo, p.playerName);
     });
 
-    // 소개 레이블 클릭 시 카드 이벤트 전파 방지
+    // Introduction 레이블 클릭 시 카드 이벤트 전파 방지
     introLabel.addEventListener('click', (e) => {
       e.stopPropagation();
     });
 
-    // 소개 체크박스 이벤트 (Phase 3.5.1)
+    // Introduction 체크박스 이벤트 (Phase 3.5.1)
     introCheckbox.addEventListener('change', (e) => {
       e.stopPropagation();
       const isChecked = e.target.checked;
@@ -550,13 +550,13 @@ function renderKeyPlayers(players) {
       img.loading = 'lazy';
 
       img.onerror = function() {
-        console.error('이미지 로드 실패:', this.src);
+        console.error('Image load failed:', this.src);
         this.style.display = 'none';
         if (this.nextElementSibling) this.nextElementSibling.style.display = 'flex';
       };
 
       img.onload = function() {
-        console.log('이미지 로드 성공:', this.src);
+        console.log('Image loaded:', this.src);
         this.style.display = 'block';
         if (this.nextElementSibling) this.nextElementSibling.style.display = 'none';
       };
@@ -565,7 +565,7 @@ function renderKeyPlayers(players) {
       const fallback = document.createElement('div');
       fallback.className = 'playerPhotoPro empty';
       fallback.style.display = 'none';
-      fallback.title = '이미지 로드 실패';
+      fallback.title = 'Image load failed';
       fallback.textContent = '👤';
 
       photoContainer.appendChild(img);
@@ -574,7 +574,7 @@ function renderKeyPlayers(players) {
       // URL이 없을 때: 기본 아이콘
       const emptyPhoto = document.createElement('div');
       emptyPhoto.className = 'playerPhotoPro empty';
-      emptyPhoto.title = '사진 URL 없음 (Type 시트 N열 확인)';
+      emptyPhoto.title = 'No photo URL (Check Type sheet column N)';
       emptyPhoto.textContent = '👤';
       photoContainer.appendChild(emptyPhoto);
     }
@@ -589,14 +589,14 @@ function loadTablePlayers(tableId) {
 
   // 로딩 표시 (단일 오버레이)
   LoadingManager.show({
-    message: '테이블 ' + formatTableNo(tableId) + ' 로딩 중',
+    message: 'Loading table ' + formatTableNo(tableId),
     timeout: 30000
   });
 
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        LoadingManager.hide('error', '데이터 로드 실패: ' + (response.error?.message || '알 수 없는 오류'));
+        LoadingManager.hide('error', 'Failed to load data: ' + (response.error?.message || 'Unknown error'));
         return;
       }
 
@@ -605,7 +605,7 @@ function loadTablePlayers(tableId) {
       LoadingManager.hide(); // 렌더링 완료 후 숨김 (토스트 없음)
     })
     .withFailureHandler(err => {
-      LoadingManager.hide('error', '네트워크 오류: ' + err.message);
+      LoadingManager.hide('error', 'Network error: ' + err.message);
     })
     .getTablePlayers(tableId);
 }
@@ -635,7 +635,7 @@ function renderTablePlayers(tableId, players) {
 
       const emptySeat = document.createElement('span');
       emptySeat.className = 'emptySeat';
-      emptySeat.textContent = '(빈 좌석)';
+      emptySeat.textContent = '(Empty seat)';
 
       const addBtn = document.createElement('button');
       addBtn.className = 'addBtn';
@@ -676,7 +676,7 @@ function renderTablePlayers(tableId, players) {
       const moveBtn = document.createElement('button');
       moveBtn.className = 'moveBtn';
       moveBtn.textContent = '🔀';
-      moveBtn.title = '플레이어 이동';
+      moveBtn.title = 'Move player';
       moveBtn.addEventListener('click', () => {
         movePlayerPrompt(tableId, p.seatNo, p.playerName);
       });
@@ -709,19 +709,19 @@ function editChips(tableId, seatNo, currentChips, playerName) {
 
   const title = document.createElement('div');
   title.className = 'overlayTitle';
-  title.textContent = formatSeatNo(seatNo) + ' ' + playerName + ' 칩 수정';
+  title.textContent = formatSeatNo(seatNo) + ' ' + playerName + ' Edit Chips';
 
   const currentInfo = document.createElement('div');
   currentInfo.className = 'muted';
   currentInfo.style.fontSize = '1.2rem';
   currentInfo.style.marginBottom = 'var(--sp-md)';
-  currentInfo.textContent = '현재: ' + formatChips(currentChips);
+  currentInfo.textContent = 'Current: ' + formatChips(currentChips);
 
   const input = document.createElement('input');
   input.type = 'text';
   input.id = 'chipInput';
   input.className = 'overlayInput';
-  input.placeholder = '예: 750000 또는 750k';
+  input.placeholder = 'e.g. 750000 or 750k';
   input.autocomplete = 'off';
   input.inputMode = 'decimal';
 
@@ -730,12 +730,12 @@ function editChips(tableId, seatNo, currentChips, playerName) {
 
   const btnCancel = document.createElement('button');
   btnCancel.className = 'btnCancel';
-  btnCancel.textContent = '취소';
+  btnCancel.textContent = 'Cancel';
   btnCancel.addEventListener('click', closeOverlay);
 
   const btnConfirm = document.createElement('button');
   btnConfirm.className = 'btnConfirm';
-  btnConfirm.textContent = '확인';
+  btnConfirm.textContent = 'Confirm';
   btnConfirm.addEventListener('click', () => confirmEditChips(tableId, seatNo, currentChips));
 
   actions.appendChild(btnCancel);
@@ -753,13 +753,13 @@ function editChips(tableId, seatNo, currentChips, playerName) {
 function confirmEditChips(tableId, seatNo, oldChips) {
   const input = document.getElementById('chipInput').value.trim();
   if (!input) {
-    LoadingManager.showToast('칩을 입력하세요', 'warning');
+    LoadingManager.showToast('Enter chip amount', 'warning');
     return;
   }
 
   const newChips = parseChips(input);
   if (newChips === null || newChips < 0) {
-    LoadingManager.showToast('올바른 숫자를 입력하세요 (예: 750k)', 'warning');
+    LoadingManager.showToast('Please enter a valid number (e.g. 750k)', 'warning');
     return;
   }
 
@@ -769,8 +769,8 @@ function confirmEditChips(tableId, seatNo, oldChips) {
   callServerWithLoading({
     action: 'updatePlayerChips',
     params: [tableId, seatNo, newChips],
-    loadingMessage: '칩 업데이트 중',
-    successMessage: '✅ 칩이 수정되었습니다',
+    loadingMessage: 'Updating chips',
+    successMessage: '✅ Chips updated successfully',
     onSuccess: () => saveChipHistory(tableId, seatNo, newChips)
   });
 }
@@ -784,20 +784,20 @@ function addPlayerPrompt(tableId, seatNo) {
 
   const title = document.createElement('div');
   title.className = 'overlayTitle';
-  title.textContent = seatNo + ' 플레이어 추가';
+  title.textContent = seatNo + ' Add Player';
 
   const nameInput = document.createElement('input');
   nameInput.type = 'text';
   nameInput.id = 'nameInput';
   nameInput.className = 'overlayInput';
-  nameInput.placeholder = '이름';
+  nameInput.placeholder = 'Name';
   nameInput.autocomplete = 'off';
 
   const nationInput = document.createElement('input');
   nationInput.type = 'text';
   nationInput.id = 'nationInput';
   nationInput.className = 'overlayInput';
-  nationInput.placeholder = '국가 코드 (예: KR, US, JP)';
+  nationInput.placeholder = 'Country Code (e.g. KR, US, JP)';
   nationInput.autocomplete = 'off';
   nationInput.maxLength = 2;
   nationInput.style.textTransform = 'uppercase';
@@ -806,7 +806,7 @@ function addPlayerPrompt(tableId, seatNo) {
   chipsInput.type = 'text';
   chipsInput.id = 'chipsInput';
   chipsInput.className = 'overlayInput';
-  chipsInput.placeholder = '칩 (예: 280000 또는 280k)';
+  chipsInput.placeholder = 'Chips (e.g. 280000 or 280k)';
   chipsInput.autocomplete = 'off';
   chipsInput.inputMode = 'decimal';
 
@@ -825,7 +825,7 @@ function addPlayerPrompt(tableId, seatNo) {
 
   const labelText = document.createElement('span');
   labelText.style.fontSize = '1.4rem';
-  labelText.textContent = '키 플레이어로 등록';
+  labelText.textContent = 'Register as Key Player';
 
   label.appendChild(keyInput);
   label.appendChild(labelText);
@@ -835,12 +835,12 @@ function addPlayerPrompt(tableId, seatNo) {
 
   const btnCancel = document.createElement('button');
   btnCancel.className = 'btnCancel';
-  btnCancel.textContent = '취소';
+  btnCancel.textContent = 'Cancel';
   btnCancel.addEventListener('click', closeOverlay);
 
   const btnConfirm = document.createElement('button');
   btnConfirm.className = 'btnConfirm';
-  btnConfirm.textContent = '추가';
+  btnConfirm.textContent = 'Add';
   btnConfirm.addEventListener('click', () => confirmAddPlayer(tableId, seatNo));
 
   actions.appendChild(btnCancel);
@@ -865,21 +865,21 @@ function confirmAddPlayer(tableId, seatNo) {
 
   // 입력 검증 (Toast로 변경)
   if (!name) {
-    LoadingManager.showToast('이름을 입력하세요', 'warning');
+    LoadingManager.showToast('Please enter name', 'warning');
     return;
   }
   if (!nation) {
-    LoadingManager.showToast('국가 코드를 입력하세요', 'warning');
+    LoadingManager.showToast('Please enter country code', 'warning');
     return;
   }
   if (!chipsInput) {
-    LoadingManager.showToast('칩을 입력하세요', 'warning');
+    LoadingManager.showToast('Enter chip amount', 'warning');
     return;
   }
 
   const chips = parseChips(chipsInput);
   if (chips === null || chips < 0) {
-    LoadingManager.showToast('올바른 칩 숫자를 입력하세요', 'warning');
+    LoadingManager.showToast('Please enter valid chip amount', 'warning');
     return;
   }
 
@@ -889,21 +889,21 @@ function confirmAddPlayer(tableId, seatNo) {
   callServerWithLoading({
     action: 'addPlayer',
     params: [tableId, seatNo, name, nation, chips, isKey],
-    loadingMessage: '플레이어 추가 중',
-    successMessage: '✅ ' + name + ' 플레이어가 추가되었습니다'
+    loadingMessage: 'Adding player',
+    successMessage: '✅ ' + name + ' has been added'
   });
 }
 
 /* ===== Delete Player ===== */
 function deletePlayerConfirm(tableId, seatNo, playerName) {
-  if (!confirm(seatNo + ' ' + playerName + ' 삭제하시겠습니까?')) return;
+  if (!confirm(seatNo + ' ' + playerName + ' Delete this player?')) return;
 
   // 재사용 헬퍼 함수 사용
   callServerWithLoading({
     action: 'removePlayer',
     params: [tableId, seatNo],
-    loadingMessage: playerName + ' 삭제 중',
-    successMessage: '✅ ' + playerName + ' 플레이어가 삭제되었습니다'
+    loadingMessage: playerName + ' Deleting',
+    successMessage: '✅ ' + playerName + ' has been deleted'
   });
 }
 
@@ -916,7 +916,7 @@ function movePlayerPrompt(tableId, seatNo, playerName) {
 
   if (!overlay || !content) {
     console.error('❌ 오버레이 요소를 찾을 수 없습니다.');
-    alert('오버레이 요소를 찾을 수 없습니다. 페이지를 새로고침하세요.');
+    alert('Overlay element not found. Please refresh the page.');
     return;
   }
 
@@ -924,17 +924,17 @@ function movePlayerPrompt(tableId, seatNo, playerName) {
 
   const title = document.createElement('div');
   title.className = 'overlayTitle';
-  title.textContent = '🔀 ' + playerName + ' 이동';
+  title.textContent = '🔀 ' + playerName + ' Move';
 
   const currentInfo = document.createElement('div');
   currentInfo.style.fontSize = '1.2rem';
   currentInfo.style.color = 'var(--muted)';
   currentInfo.style.marginBottom = 'var(--sp-lg)';
-  currentInfo.textContent = '현재: T' + tableId + ' S' + seatNo;
+  currentInfo.textContent = 'Current: T' + tableId + ' S' + seatNo;
 
   const labelTable = document.createElement('label');
   labelTable.htmlFor = 'moveToTable';
-  labelTable.textContent = '목적지 테이블 번호';
+  labelTable.textContent = 'Destination Table Number';
   labelTable.style.display = 'block';
   labelTable.style.marginBottom = 'var(--sp-xs)';
   labelTable.style.fontSize = '1.4rem';
@@ -944,14 +944,14 @@ function movePlayerPrompt(tableId, seatNo, playerName) {
   inputTable.type = 'number';
   inputTable.id = 'moveToTable';
   inputTable.className = 'overlayInput';
-  inputTable.placeholder = '예: 15';
+  inputTable.placeholder = 'e.g. 15';
   inputTable.min = '1';
   inputTable.max = '999';
   inputTable.value = tableId; // 기본값: 현재 테이블
 
   const labelSeat = document.createElement('label');
   labelSeat.htmlFor = 'moveToSeat';
-  labelSeat.textContent = '목적지 좌석 번호';
+  labelSeat.textContent = 'Destination Seat Number';
   labelSeat.style.display = 'block';
   labelSeat.style.marginTop = 'var(--sp-md)';
   labelSeat.style.marginBottom = 'var(--sp-xs)';
@@ -962,7 +962,7 @@ function movePlayerPrompt(tableId, seatNo, playerName) {
   inputSeat.type = 'number';
   inputSeat.id = 'moveToSeat';
   inputSeat.className = 'overlayInput';
-  inputSeat.placeholder = '예: 3';
+  inputSeat.placeholder = 'e.g. 3';
   inputSeat.min = '1';
   inputSeat.max = '9';
 
@@ -971,19 +971,19 @@ function movePlayerPrompt(tableId, seatNo, playerName) {
   warningText.style.color = '#f59e0b';
   warningText.style.marginTop = 'var(--sp-md)';
   warningText.style.marginBottom = 'var(--sp-md)';
-  warningText.textContent = '⚠️ 목적지에 플레이어가 있으면 덮어씁니다.';
+  warningText.textContent = '⚠️ Destination will overwrite existing player if present.';
 
   const actions = document.createElement('div');
   actions.className = 'overlayActions';
 
   const btnCancel = document.createElement('button');
   btnCancel.className = 'btnCancel';
-  btnCancel.textContent = '취소';
+  btnCancel.textContent = 'Cancel';
   btnCancel.onclick = closeOverlay;
 
   const btnConfirm = document.createElement('button');
   btnConfirm.className = 'btnConfirm';
-  btnConfirm.textContent = '이동';
+  btnConfirm.textContent = 'Move';
   btnConfirm.onclick = () => confirmMovePlayer(tableId, seatNo, playerName);
 
   actions.appendChild(btnCancel);
@@ -1013,26 +1013,26 @@ function confirmMovePlayer(fromTableNo, fromSeatNo, playerName) {
 
   // 입력 검증 (Toast로 변경)
   if (!toTableNo || toTableNo < 1) {
-    LoadingManager.showToast('목적지 테이블 번호를 입력하세요', 'warning');
+    LoadingManager.showToast('Please enter destination table number', 'warning');
     return;
   }
 
   if (!toSeatNo || toSeatNo < 1 || toSeatNo > 9) {
-    LoadingManager.showToast('목적지 좌석 번호를 1-9 사이로 입력하세요', 'warning');
+    LoadingManager.showToast('Please enter destination seat number (1-9)', 'warning');
     return;
   }
 
   if (fromTableNo === toTableNo && fromSeatNo === toSeatNo) {
-    LoadingManager.showToast('출발지와 목적지가 동일합니다', 'warning');
+    LoadingManager.showToast('Source and destination are the same', 'warning');
     return;
   }
 
   closeOverlay();
 
-  // 이동 작업 전체 동안 로딩 유지
+  // Move 작업 전체 동안 로딩 유지
   console.log('⏳ [1/4] 로딩 시작');
   LoadingManager.show({
-    message: playerName + ' 이동 중...',
+    message: 'Moving ' + playerName + '...',
     hint: 'T' + fromTableNo + ' S' + fromSeatNo + ' → T' + toTableNo + ' S' + toSeatNo,
     timeout: 30000
   });
@@ -1042,20 +1042,20 @@ function confirmMovePlayer(fromTableNo, fromSeatNo, playerName) {
     .withSuccessHandler(response => {
       if (!response.success) {
         console.log('❌ [X] 서버 에러:', response.error?.message);
-        LoadingManager.hide('error', '에러: ' + (response.error?.message || '이동 실패'));
+        LoadingManager.hide('error', 'Error: ' + (response.error?.message || 'Move failed'));
         return;
       }
 
       console.log('✅ [3/4] 서버 작업 완료, 화면 새로고침 시작');
       LoadingManager.show({
-        message: '화면 갱신 중...',
-        hint: '최신 데이터 로딩'
+        message: 'Refreshing screen...',
+        hint: 'Loading latest data'
       });
 
       // 새로고침 완료 후 로딩 숨김
       const refreshCompleted = () => {
         console.log('🎉 [4/4] 전체 작업 완료');
-        LoadingManager.hide('success', '✅ ' + playerName + '를 T' + toTableNo + ' S' + toSeatNo + '로 이동했습니다');
+        LoadingManager.hide('success', '✅ ' + playerName + ' moved to T' + toTableNo + ' S' + toSeatNo);
       };
 
       if (currentView === 'key') {
@@ -1068,7 +1068,7 @@ function confirmMovePlayer(fromTableNo, fromSeatNo, playerName) {
     })
     .withFailureHandler(err => {
       console.log('❌ [X] 네트워크 에러:', err.message);
-      LoadingManager.hide('error', '네트워크 오류: ' + err.message);
+      LoadingManager.hide('error', 'Network error: ' + err.message);
     })
     .movePlayer(fromTableNo, fromSeatNo, toTableNo, toSeatNo);
 }
@@ -1082,7 +1082,7 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
 
   const title = document.createElement('div');
   title.className = 'overlayTitle';
-  title.textContent = '📷 ' + playerName + ' 사진 편집';
+  title.textContent = '📷 ' + playerName + ' Photo Edit';
 
   const input = document.createElement('input');
   input.type = 'text';
@@ -1091,10 +1091,10 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
   input.placeholder = 'https://i.imgur.com/abc123.jpg';
   input.value = currentPhotoUrl;
 
-  // Phase 3.2: 사진 촬영 버튼 추가
+  // Phase 3.2: Take Photo 버튼 Add
   const photoTakeBtn = document.createElement('button');
   photoTakeBtn.className = 'btnTakePhoto';
-  photoTakeBtn.textContent = '📷 사진 촬영';
+  photoTakeBtn.textContent = '📷 Take Photo';
   photoTakeBtn.style.width = '100%';
   photoTakeBtn.style.background = '#16a34a';
   photoTakeBtn.style.border = '1px solid #16a34a';
@@ -1126,19 +1126,19 @@ function editPlayerPhoto(playerName, currentPhotoUrl) {
   hint.style.color = '#9aa3b2';
   hint.style.marginTop = '-8px';
   hint.style.marginBottom = '12px';
-  hint.textContent = '또는 URL 직접 입력:';
+  hint.textContent = 'Or enter URL directly:';
 
   const actions = document.createElement('div');
   actions.className = 'overlayActions';
 
   const btnCancel = document.createElement('button');
   btnCancel.className = 'btnCancel';
-  btnCancel.textContent = '취소';
+  btnCancel.textContent = 'Cancel';
   btnCancel.addEventListener('click', closeOverlay);
 
   const btnConfirm = document.createElement('button');
   btnConfirm.className = 'btnConfirm';
-  btnConfirm.textContent = '저장';
+  btnConfirm.textContent = 'Save';
   btnConfirm.addEventListener('click', () => confirmPhotoEdit(playerName));
 
   actions.appendChild(btnCancel);
@@ -1166,12 +1166,12 @@ function confirmPhotoEdit(playerName) {
 
   // 입력 검증 (Toast로 변경)
   if (!photoUrl) {
-    LoadingManager.showToast('사진 URL을 입력하세요', 'warning');
+    LoadingManager.showToast('Please enter photo URL', 'warning');
     return;
   }
 
   if (!photoUrl.startsWith('https://') && !photoUrl.startsWith('http://')) {
-    LoadingManager.showToast('HTTP(S)로 시작하는 URL을 입력하세요', 'warning');
+    LoadingManager.showToast('Please enter URL starting with HTTP(S)', 'warning');
     return;
   }
 
@@ -1179,10 +1179,10 @@ function confirmPhotoEdit(playerName) {
   const directUrl = convertToDirectImageUrl(photoUrl);
   if (directUrl !== photoUrl) {
     const confirmed = confirm(
-      'Imgur 페이지 URL이 감지되었습니다.\n\n' +
-      '원본: ' + photoUrl + '\n' +
-      '변환: ' + directUrl + '\n\n' +
-      '직접 이미지 링크로 변환하여 저장하시겠습니까?'
+      'Imgur page URL detected.\n\n' +
+      'Original: ' + photoUrl + '\n' +
+      'Converted: ' + directUrl + '\n\n' +
+      'Convert to direct image link and save?'
     );
     if (confirmed) {
       photoUrl = directUrl;
@@ -1195,8 +1195,8 @@ function confirmPhotoEdit(playerName) {
   callServerWithLoading({
     action: 'updateKeyPlayerPhoto',
     params: [playerName, photoUrl],
-    loadingMessage: '사진 URL 저장 중',
-    successMessage: '✅ 사진이 저장되었습니다'
+    loadingMessage: 'Saving photo URL',
+    successMessage: '✅ Photo saved successfully'
   });
 }
 
@@ -1222,7 +1222,7 @@ function convertToDirectImageUrl(url) {
   if (imgurMatch) {
     const imageId = imgurMatch[1];
     const convertedUrl = 'https://i.imgur.com/' + imageId + '.jpg';
-    console.log('Imgur URL 변환: ' + trimmedUrl + ' → ' + convertedUrl);
+    console.log('Imgur URL Converted: ' + trimmedUrl + ' → ' + convertedUrl);
     return convertedUrl;
   }
 
@@ -1232,7 +1232,7 @@ function convertToDirectImageUrl(url) {
 
 /**
  * Poker Room, Table Name, Table No를 포맷팅
- * @param {string} pokerRoom - Poker Room 이름
+ * @param {string} pokerRoom - Poker Room Name
  * @param {string} tableName - Table Name
  * @param {string} tableId - Table No (예: T1)
  * @return {string} "Merit Hall | Ocean Blue | T1" 형식
@@ -1295,9 +1295,9 @@ function saveChipHistory(tableId, seatNo, chips) {
 let isUploading = false; // 중복 업로드 방지
 
 /**
- * 사진 촬영 후 Imgur 업로드 처리
+ * Take Photo 후 Imgur 업로드 처리
  * @param {Event} e - File input change event
- * @param {string} playerName - 플레이어 이름
+ * @param {string} playerName - 플레이어 Name
  */
 function handlePhotoCapture(e, playerName) {
   const file = e.target.files[0];
@@ -1305,36 +1305,36 @@ function handlePhotoCapture(e, playerName) {
 
   // 중복 업로드 방지
   if (isUploading) {
-    alert('이미 업로드 중입니다. 잠시만 기다려주세요.');
+    alert('Upload already in progress. Please wait.');
     return;
   }
 
   // 파일 타입 검증
   if (!file.type.startsWith('image/')) {
-    alert('이미지 파일만 업로드 가능합니다.');
+    alert('Only image files can be uploaded.');
     return;
   }
 
   // 파일 크기 제한 (5MB)
   const MAX_SIZE = 5 * 1024 * 1024;
   if (file.size > MAX_SIZE) {
-    alert('사진 크기는 5MB 이하여야 합니다.\n현재: ' + Math.round(file.size / 1024 / 1024) + 'MB');
+    alert('Photo size must be 5MB or less.\nCurrent: ' + Math.round(file.size / 1024 / 1024) + 'MB');
     return;
   }
 
   isUploading = true;
 
-  // 팝업 닫고 로딩 화면 표시 (진행률 바 + 취소 버튼)
+  // 팝업 닫고 로딩 화면 표시 (진행률 바 + Cancel 버튼)
   closeOverlay();
   LoadingManager.show({
-    message: '사진 업로드 중',
-    hint: '네트워크 상태에 따라 시간이 걸릴 수 있습니다',
+    message: 'Uploading photo',
+    hint: 'May take time depending on network status',
     progress: true,
     cancelable: true,
     timeout: 60000,
     onCancel: () => {
       isUploading = false;
-      LoadingManager.showToast('사진 업로드가 취소되었습니다', 'warning');
+      LoadingManager.showToast('Photo upload cancelled', 'warning');
     }
   });
 
@@ -1359,22 +1359,22 @@ function handlePhotoCapture(e, playerName) {
         if (response.success) {
           LoadingManager.setProgress(100);
 
-          // 자동 저장
+          // 자동 Save
           google.script.run
             .withSuccessHandler(saveResponse => {
               if (saveResponse.success) {
-                LoadingManager.hide('success', '✅ 사진이 저장되었습니다');
+                LoadingManager.hide('success', '✅ Photo saved successfully');
                 loadKeyPlayers();
               } else {
-                LoadingManager.hide('error', '저장 실패: ' + (saveResponse.error?.message || '알 수 없는 오류'));
+                LoadingManager.hide('error', 'Save failed: ' + (saveResponse.error?.message || 'Unknown error'));
               }
             })
             .withFailureHandler(err => {
-              LoadingManager.hide('error', '저장 에러: ' + err.message);
+              LoadingManager.hide('error', 'Save Error: ' + err.message);
             })
             .updateKeyPlayerPhoto(playerName, response.data.imgurUrl);
         } else {
-          LoadingManager.hide('error', '업로드 실패: ' + (response.error?.message || '알 수 없는 오류'));
+          LoadingManager.hide('error', 'Upload failed: ' + (response.error?.message || 'Unknown error'));
         }
       })
       .withFailureHandler(err => {
@@ -1382,11 +1382,11 @@ function handlePhotoCapture(e, playerName) {
         isUploading = false;
 
         // 에러 타입 분석
-        let errorMsg = '업로드 에러: ' + err.message;
+        let errorMsg = 'Upload error: ' + err.message;
         if (err.message.includes('429')) {
-          errorMsg = 'Imgur 업로드 한도 초과. 1분 후 다시 시도하세요.';
+          errorMsg = 'Imgur upload limit exceeded. Try again in 1 minute.';
         } else if (err.message.includes('timeout')) {
-          errorMsg = '업로드 타임아웃. 네트워크 상태를 확인하세요.';
+          errorMsg = 'Upload timeout. Check your network.';
         }
 
         LoadingManager.hide('error', errorMsg);
@@ -1396,7 +1396,7 @@ function handlePhotoCapture(e, playerName) {
 
   reader.onerror = function() {
     isUploading = false;
-    LoadingManager.hide('error', '파일 읽기 실패');
+    LoadingManager.hide('error', 'Failed to read file');
   };
 
   reader.readAsDataURL(file);
@@ -1410,7 +1410,7 @@ function showLoading() {
   const list = currentView === 'key'
     ? document.getElementById('keyPlayerList')
     : document.getElementById('tablePlayerList');
-  list.innerHTML = '<div class="loading">처리 중...</div>';
+  list.innerHTML = '<div class="loading">Processing...</div>';
 }
 
 function hideLoading() {
@@ -1420,8 +1420,8 @@ function hideLoading() {
 /* ===== Introduction Toggle (Phase 3.5.1) ===== */
 
 /**
- * 키 플레이어 소개 체크박스 토글
- * @param {string} playerName - 플레이어 이름
+ * 키 플레이어 Introduction 체크박스 토글
+ * @param {string} playerName - 플레이어 Name
  * @param {boolean} isChecked - 체크 여부
  */
 function toggleIntroduction(playerName, isChecked) {
@@ -1430,18 +1430,18 @@ function toggleIntroduction(playerName, isChecked) {
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        LoadingManager.showToast('소개 상태 업데이트 실패: ' + (response.error?.message || '알 수 없는 오류'), 'error');
+        LoadingManager.showToast('Failed to update introduction status: ' + (response.error?.message || 'Unknown error'), 'error');
         // 실패 시 체크박스 원래 상태로 복원 (화면 리프레시)
         loadKeyPlayers();
         return;
       }
 
       // 성공 토스트 (간단하게)
-      const status = isChecked ? '체크됨' : '해제됨';
-      LoadingManager.showToast('✅ ' + playerName + ' 소개 ' + status, 'success', 2000);
+      const status = isChecked ? 'checked' : 'unchecked';
+      LoadingManager.showToast('✅ ' + playerName + ' Introduction ' + status, 'success', 2000);
     })
     .withFailureHandler(err => {
-      LoadingManager.showToast('네트워크 오류: ' + err.message, 'error');
+      LoadingManager.showToast('Network error: ' + err.message, 'error');
       loadKeyPlayers(); // 실패 시 복원
     })
     .updateIntroduction(playerName, isChecked);
@@ -1457,15 +1457,15 @@ const LoadingManager = {
    * 로딩 표시 (단일 통합 UI)
    * @param {Object} options
    * @param {string} options.message - 메인 메시지 (예: "데이터 로딩 중")
-   * @param {string} options.hint - 힌트 메시지 (예: "잠시만 기다려주세요")
+   * @param {string} options.hint - 힌트 메시지 (예: "Please wait")
    * @param {boolean} options.progress - 진행률 바 표시 여부
    * @param {number} options.timeout - 타임아웃 (ms, 0=무제한)
-   * @param {boolean} options.cancelable - 취소 버튼 표시 여부
-   * @param {Function} options.onCancel - 취소 버튼 클릭 시 콜백
+   * @param {boolean} options.cancelable - Cancel 버튼 표시 여부
+   * @param {Function} options.onCancel - Cancel 버튼 클릭 시 콜백
    */
   show(options = {}) {
     const {
-      message = '로딩 중...',
+      message = 'Loading...',
       hint = '',
       progress = false,
       timeout = 30000,
@@ -1494,7 +1494,7 @@ const LoadingManager = {
       progressTextEl.classList.remove('show');
     }
 
-    // 취소 버튼
+    // Cancel 버튼
     if (cancelable && onCancel) {
       cancelBtn.classList.add('show');
       this._cancelCallback = onCancel;
@@ -1524,7 +1524,7 @@ const LoadingManager = {
     const lock = document.getElementById('screenLock');
     if (!lock) return;
 
-    // 타임아웃 취소
+    // 타임아웃 Cancel
     if (this._timeoutId) {
       clearTimeout(this._timeoutId);
       this._timeoutId = null;
@@ -1583,11 +1583,11 @@ const LoadingManager = {
    * 타임아웃 처리 (30초 경과 시)
    */
   _handleTimeout() {
-    this.showToast('서버 응답이 지연되고 있습니다. 네트워크 상태를 확인하세요.', 'warning', 5000);
+    this.showToast('Server response is delayed. Please check your network.', 'warning', 5000);
   },
 
   /**
-   * 취소 버튼 처리
+   * Cancel 버튼 처리
    */
   _handleCancel() {
     if (this._cancelCallback) {
@@ -1608,17 +1608,17 @@ const LoadingManager = {
 /**
  * 서버 호출 공통 래퍼 (로딩 UI + 에러 처리 자동화)
  * @param {Object} options
- * @param {string} options.action - 서버 함수 이름 (예: 'updatePlayerChips')
+ * @param {string} options.action - 서버 함수 Name (예: 'updatePlayerChips')
  * @param {Array} options.params - 서버 함수 파라미터 배열
  * @param {string} options.loadingMessage - 로딩 메시지
  * @param {string} options.successMessage - 성공 토스트 메시지 (null이면 표시 안함)
- * @param {Function} options.onSuccess - 성공 시 추가 작업 (선택)
+ * @param {Function} options.onSuccess - 성공 시 Add 작업 (선택)
  */
 function callServerWithLoading(options) {
   const {
     action,
     params = [],
-    loadingMessage = '처리 중...',
+    loadingMessage = 'Processing...',
     successMessage = null,
     onSuccess = null
   } = options;
@@ -1630,7 +1630,7 @@ function callServerWithLoading(options) {
   google.script.run
     .withSuccessHandler(response => {
       if (!response.success) {
-        LoadingManager.hide('error', '에러: ' + (response.error?.message || '작업 실패'));
+        LoadingManager.hide('error', 'Error: ' + (response.error?.message || 'Operation failed'));
         return;
       }
 
@@ -1641,7 +1641,7 @@ function callServerWithLoading(options) {
         LoadingManager.hide();
       }
 
-      // 추가 작업 실행
+      // Add 작업 실행
       if (onSuccess) {
         onSuccess(response);
       }
@@ -1654,14 +1654,14 @@ function callServerWithLoading(options) {
       }
     })
     .withFailureHandler(err => {
-      LoadingManager.hide('error', '네트워크 오류: ' + err.message);
+      LoadingManager.hide('error', 'Network error: ' + err.message);
     })
     [action](...params);
 }
 
 /* ===== Legacy API (기존 코드 호환성 유지) ===== */
 function showLoading() {
-  LoadingManager.show({ message: '처리 중...' });
+  LoadingManager.show({ message: 'Processing...' });
 }
 
 function hideLoading() {
@@ -1669,7 +1669,7 @@ function hideLoading() {
 }
 
 function lockScreen() {
-  LoadingManager.show({ message: '사진 저장 중...' });
+  LoadingManager.show({ message: 'Saving photo...' });
 }
 
 function unlockScreen() {
