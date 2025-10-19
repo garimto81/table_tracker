@@ -2,15 +2,16 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.5.5',
-  name: 'Fallback Sorting Logic',
+  current: 'v3.6.0',
+  name: 'PlayerType Management (Core/Key player/Feature)',
   date: '2025-01-19',
-  phase: '3.5.5',
+  phase: '3.6.0',
   changes: [
-    '🔄 Auto-fallback to DisplayOrder sorting when Introduction column missing',
-    '✨ Introduction-based sorting (when column exists)',
-    '📊 Sort priority: Introduction > DisplayOrder > PlayerName',
-    '🛡️ Backward compatibility with legacy PlayerPhotos sheets',
+    '🎭 PlayerType dropdown (Core/Key player/Feature) in PlayerPhotos D column',
+    '🥇 Core players appear at the top (highest priority)',
+    '🚫 Feature players excluded from Key Players list (dedicated Feature table)',
+    '📊 Sort priority: PlayerType > Introduction > DisplayOrder > PlayerName',
+    '🔄 Auto-migration: 4→6→7 column structure (UpdatedAt moved to G column)',
     '⚡ Zero performance impact (client-side sorting)'
   ],
   deployment: {
@@ -21,14 +22,14 @@ const VERSION = {
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
   },
   files: {
-    'tracker_gs.js': 'v3.5.5',
+    'tracker_gs.js': 'v3.6.0',
     'tracker.html': 'v3.5.3',
     'performance_test.js': 'v3.5.1',
     'appsscript.json': 'v3.2.0',
-    'version.js': 'v3.5.5',
-    'docs/CHANGELOG.md': 'v3.5.5',
-    'docs/STATUS.md': 'v3.5.5',
-    'docs/PRD.md': 'v3.5.5',
+    'version.js': 'v3.6.0',
+    'docs/CHANGELOG.md': 'v3.6.0',
+    'docs/STATUS.md': 'v3.6.0',
+    'docs/PRD.md': 'v3.6.0',
     'docs/LLD.md': 'v2.4.0',
     'docs/PLAN.md': 'v2.4.0',
     'docs/MIGRATION_SEATS_ONLY.md': 'v3.0.0',
@@ -41,14 +42,14 @@ const VERSION = {
   },
   status: {
     state: '✅ Stable version (Code ready)',
-    phase: 'Phase 3.5.5 (Fallback Sorting Logic)',
+    phase: 'Phase 3.6.0 (PlayerType Management)',
     blockers: [],
     lastCompleted: [
+      '✅ PlayerType dropdown D column (Core/Key player/Feature) (v3.6.0)',
+      '✅ Core players prioritized, Feature players excluded (v3.6.0)',
+      '✅ Auto-migration 4→6→7 column structure (v3.6.0)',
       '✅ Auto-fallback to DisplayOrder sorting (v3.5.5)',
-      '✅ Introduction-based sorting implemented (v3.5.4)',
-      '✅ Complete English UI translation (v3.5.3)',
-      '✅ Key player number badge added (v3.5.2)',
-      '✅ Introduction checkbox moved to PlayerPhotos column E (v3.5.2)'
+      '✅ Introduction-based sorting implemented (v3.5.4)'
     ]
   },
   next: {

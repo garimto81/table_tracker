@@ -10,11 +10,11 @@
 
 /* ===== 버전 관리 ===== */
 // version.js에서 버전 정보 로드 (Google Apps Script 환경)
-let TRACKER_VERSION = 'v3.5.5'; // Fallback version
+let TRACKER_VERSION = 'v3.6.0'; // Fallback version
 try {
   // version.js가 같은 프로젝트에 있다면 로드 시도
   // Google Apps Script는 require() 미지원이므로 수동 동기화 필요
-  TRACKER_VERSION = 'v3.5.5'; // version.js의 VERSION.current와 수동 동기화
+  TRACKER_VERSION = 'v3.6.0'; // version.js의 VERSION.current와 수동 동기화
 } catch (e) {
   Logger.log('version.js 로드 실패, fallback 버전 사용: ' + TRACKER_VERSION);
 }
@@ -379,8 +379,8 @@ function ensurePlayerPhotosSheet_() {
     // 시트 생성
     sheet = ss.insertSheet(PLAYER_PHOTOS_SHEET_NAME);
 
-    // 헤더 설정 (Phase 3.5.1: Introduction E열, Phase 3.5.2: DisplayOrder F열)
-    const headers = ['PlayerName', 'PhotoURL', 'CreatedAt', 'UpdatedAt', 'Introduction', 'DisplayOrder'];
+    // 헤더 설정 (Phase 3.6.0: PlayerType D열 추가)
+    const headers = ['PlayerName', 'PhotoURL', 'CreatedAt', 'PlayerType', 'Introduction', 'DisplayOrder', 'UpdatedAt'];
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
     // 헤더 스타일 (굵게, 배경색)
@@ -393,46 +393,111 @@ function ensurePlayerPhotosSheet_() {
     sheet.setColumnWidth(1, 150); // PlayerName
     sheet.setColumnWidth(2, 300); // PhotoURL
     sheet.setColumnWidth(3, 180); // CreatedAt
-    sheet.setColumnWidth(4, 180); // UpdatedAt
+    sheet.setColumnWidth(4, 120); // PlayerType (드롭다운)
     sheet.setColumnWidth(5, 120); // Introduction
     sheet.setColumnWidth(6, 100); // DisplayOrder
+    sheet.setColumnWidth(7, 180); // UpdatedAt
 
-    log_(LOG_LEVEL.INFO, 'ensurePlayerPhotosSheet_', 'PlayerPhotos 시트 생성 완료');
+    // D열 PlayerType 드롭다운 설정 (Core/Key player/Feature)
+    const playerTypeRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Core', 'Key player', 'Feature'], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 4, 1000, 1).setDataValidation(playerTypeRule); // D2:D1001
+
+    log_(LOG_LEVEL.INFO, 'ensurePlayerPhotosSheet_', 'PlayerPhotos 시트 생성 완료 (PlayerType 드롭다운 포함)');
   }
 
-  // 기존 시트에 Introduction 컬럼 추가 (마이그레이션)
+  // Phase 3.6.0: 기존 시트 마이그레이션 (4열→7열)
   const lastCol = sheet.getLastColumn();
+  const lastRow = sheet.getLastRow();
+
+  // Step 1: 4열 시트 (PlayerName, PhotoURL, CreatedAt, UpdatedAt)
   if (lastCol === 4) {
-    // E1 헤더 추가
+    // G열에 UpdatedAt 이동 (D→G)
+    if (lastRow > 1) {
+      const updatedAtData = sheet.getRange(2, 4, lastRow - 1, 1).getValues(); // D열 데이터
+      sheet.insertColumnAfter(6); // G열 생성
+      sheet.getRange(2, 7, lastRow - 1, 1).setValues(updatedAtData); // G열에 복사
+    }
+    sheet.getRange(1, 7).setValue('UpdatedAt');
+    sheet.getRange(1, 7).setFontWeight('bold').setBackground('#4285f4').setFontColor('#ffffff');
+    sheet.setColumnWidth(7, 180);
+
+    // D열에 PlayerType 추가
+    sheet.getRange(1, 4).setValue('PlayerType');
+    sheet.getRange(1, 4).setFontWeight('bold').setBackground('#4285f4').setFontColor('#ffffff');
+    sheet.setColumnWidth(4, 120);
+    if (lastRow > 1) {
+      const defaultValues = Array(lastRow - 1).fill(['Key player']); // 기본값
+      sheet.getRange(2, 4, lastRow - 1, 1).setValues(defaultValues);
+    }
+
+    // E열에 Introduction 추가
+    sheet.insertColumnAfter(4); // E열 생성
     sheet.getRange(1, 5).setValue('Introduction');
     sheet.getRange(1, 5).setFontWeight('bold').setBackground('#4285f4').setFontColor('#ffffff');
     sheet.setColumnWidth(5, 120);
-
-    // 기존 데이터 행에 기본값 false 설정
-    const lastRow = sheet.getLastRow();
     if (lastRow > 1) {
       const defaultValues = Array(lastRow - 1).fill([false]);
       sheet.getRange(2, 5, lastRow - 1, 1).setValues(defaultValues);
     }
 
-    log_(LOG_LEVEL.INFO, 'ensurePlayerPhotosSheet_', 'Introduction 컬럼 마이그레이션 완료');
-  }
-
-  // Phase 3.5.2: DisplayOrder 컬럼 추가 (마이그레이션)
-  if (lastCol === 5) {
-    // F1 헤더 추가
+    // F열에 DisplayOrder 추가
+    sheet.insertColumnAfter(5); // F열 생성
     sheet.getRange(1, 6).setValue('DisplayOrder');
     sheet.getRange(1, 6).setFontWeight('bold').setBackground('#4285f4').setFontColor('#ffffff');
     sheet.setColumnWidth(6, 100);
-
-    // 기존 데이터 행에 기본값 0 설정 (나중에 자동 할당)
-    const lastRow = sheet.getLastRow();
     if (lastRow > 1) {
       const defaultValues = Array(lastRow - 1).fill([0]);
       sheet.getRange(2, 6, lastRow - 1, 1).setValues(defaultValues);
     }
 
-    log_(LOG_LEVEL.INFO, 'ensurePlayerPhotosSheet_', 'DisplayOrder 컬럼 마이그레이션 완료');
+    // D열 드롭다운 설정
+    const playerTypeRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Core', 'Key player', 'Feature'], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 4, 1000, 1).setDataValidation(playerTypeRule);
+
+    log_(LOG_LEVEL.INFO, 'ensurePlayerPhotosSheet_', '4열→7열 마이그레이션 완료 (PlayerType 드롭다운 포함)');
+  }
+
+  // Step 2: 6열 시트 (PlayerName, PhotoURL, CreatedAt, UpdatedAt, Introduction, DisplayOrder)
+  // → 7열 시트 (PlayerName, PhotoURL, CreatedAt, PlayerType, Introduction, DisplayOrder, UpdatedAt)
+  if (lastCol === 6) {
+    // G열에 UpdatedAt 이동 (D→G)
+    if (lastRow > 1) {
+      const updatedAtData = sheet.getRange(2, 4, lastRow - 1, 1).getValues(); // D열 데이터
+      sheet.insertColumnAfter(6); // G열 생성
+      sheet.getRange(2, 7, lastRow - 1, 1).setValues(updatedAtData); // G열에 복사
+    }
+    sheet.getRange(1, 7).setValue('UpdatedAt');
+    sheet.getRange(1, 7).setFontWeight('bold').setBackground('#4285f4').setFontColor('#ffffff');
+    sheet.setColumnWidth(7, 180);
+
+    // D열에 PlayerType 추가
+    sheet.getRange(1, 4).setValue('PlayerType');
+    sheet.getRange(1, 4).setFontWeight('bold').setBackground('#4285f4').setFontColor('#ffffff');
+    sheet.setColumnWidth(4, 120);
+    if (lastRow > 1) {
+      const defaultValues = Array(lastRow - 1).fill(['Key player']); // 기본값
+      sheet.getRange(2, 4, lastRow - 1, 1).setValues(defaultValues);
+    }
+
+    // E→F, F→G 이동 (Introduction, DisplayOrder 위치 조정)
+    // 이미 G열에 UpdatedAt이 있으므로 E, F만 확인
+    sheet.getRange(1, 5).setValue('Introduction');
+    sheet.getRange(1, 6).setValue('DisplayOrder');
+
+    // D열 드롭다운 설정
+    const playerTypeRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(['Core', 'Key player', 'Feature'], true)
+      .setAllowInvalid(false)
+      .build();
+    sheet.getRange(2, 4, 1000, 1).setDataValidation(playerTypeRule);
+
+    log_(LOG_LEVEL.INFO, 'ensurePlayerPhotosSheet_', '6열→7열 마이그레이션 완료 (PlayerType 드롭다운 포함)');
   }
 
   return sheet;
@@ -440,7 +505,7 @@ function ensurePlayerPhotosSheet_() {
 
 /**
  * PlayerPhotos 시트 전체를 Map으로 배치 로딩 (Performance Optimization)
- * @return {Object} { playerName: { photoUrl, introduction, displayOrder } } Map
+ * @return {Object} { playerName: { photoUrl, playerType, introduction, displayOrder } } Map
  */
 function getAllPlayerPhotosMap_() {
   try {
@@ -450,18 +515,23 @@ function getAllPlayerPhotosMap_() {
 
     if (lastRow < 2) return {}; // 데이터 없음
 
-    // A열(PlayerName), B열(PhotoURL), E열(Introduction), F열(DisplayOrder) 로딩
-    const colsToRead = Math.min(6, lastCol);
+    // Phase 3.6.0: 7열 구조 (PlayerName, PhotoURL, CreatedAt, PlayerType, Introduction, DisplayOrder, UpdatedAt)
+    const colsToRead = Math.min(7, lastCol);
     const data = sheet.getRange(2, 1, lastRow - 1, colsToRead).getValues();
     const photoMap = {};
 
-    // Introduction 컬럼 존재 여부 확인 (헤더 체크)
+    // 헤더 확인 (Introduction, PlayerType 컬럼 존재 여부)
     const headers = sheet.getRange(1, 1, 1, colsToRead).getValues()[0];
+    const hasPlayerTypeColumn = headers.length >= 4 && String(headers[3]).trim().toLowerCase() === 'playertype';
     const hasIntroductionColumn = headers.length >= 5 && String(headers[4]).trim().toLowerCase() === 'introduction';
 
     data.forEach(row => {
       const playerName = String(row[0] || '').trim();
       const photoUrl = String(row[1] || '').trim();
+      // D열(인덱스 3)에서 PlayerType 읽기 (Phase 3.6.0)
+      const playerType = hasPlayerTypeColumn
+        ? String(row[3] || 'Key player').trim()
+        : 'Key player'; // 기본값
       // E열(인덱스 4)에서 Introduction 읽기 (컬럼이 없으면 undefined)
       const introduction = hasIntroductionColumn
         ? (row.length >= 5 && (row[4] === true || String(row[4]).toUpperCase() === 'TRUE'))
@@ -471,8 +541,9 @@ function getAllPlayerPhotosMap_() {
       if (playerName) {
         photoMap[playerName] = {
           photoUrl: photoUrl,
-          introduction: introduction,
-          displayOrder: displayOrder
+          playerType: playerType,       // D열 (Phase 3.6.0)
+          introduction: introduction,    // E열
+          displayOrder: displayOrder     // F열
         };
       }
     });
@@ -549,12 +620,12 @@ function setPlayerPhotoUrl_(playerName, photoUrl) {
     if (targetRow !== -1) {
       // UPDATE: 기존 행 업데이트
       sheet.getRange(targetRow, 2).setValue(validUrl);  // B열 PhotoURL
-      sheet.getRange(targetRow, 4).setValue(now);       // D열 UpdatedAt
+      sheet.getRange(targetRow, 7).setValue(now);       // G열 UpdatedAt (Phase 3.6.0)
       log_(LOG_LEVEL.INFO, 'setPlayerPhotoUrl_', 'URL 업데이트', { playerName: validName, row: targetRow });
     } else {
-      // INSERT: 새 행 추가 (Phase 3.5.1: E열 Introduction 기본값 false)
-      // A: PlayerName, B: PhotoURL, C: CreatedAt, D: UpdatedAt, E: Introduction
-      sheet.appendRow([validName, validUrl, now, now, false]);
+      // INSERT: 새 행 추가 (Phase 3.6.0: 7열 구조)
+      // A: PlayerName, B: PhotoURL, C: CreatedAt, D: PlayerType, E: Introduction, F: DisplayOrder, G: UpdatedAt
+      sheet.appendRow([validName, validUrl, now, 'Key player', false, 0, now]);
       log_(LOG_LEVEL.INFO, 'setPlayerPhotoUrl_', 'URL 추가', { playerName: validName });
     }
 
@@ -710,9 +781,10 @@ function getKeyPlayers() {
       .map((row, index) => {
         const playerName = String(row[cols.playerName] || '').trim();
 
-        // [Performance] PlayerPhotos Map에서 photoUrl + introduction 즉시 조회
-        const playerData = photoMap[playerName] || { photoUrl: '', introduction: false, displayOrder: 0 };
+        // [Performance] PlayerPhotos Map에서 photoUrl + playerType + introduction 즉시 조회
+        const playerData = photoMap[playerName] || { photoUrl: '', playerType: 'Key player', introduction: false, displayOrder: 0 };
         const photoUrl = playerData.photoUrl || '';
+        const playerType = playerData.playerType || 'Key player'; // Phase 3.6.0
         const isIntroduced = playerData.introduction || false;
         const displayOrder = playerData.displayOrder || (index + 1); // Phase 3.5.2: 자동 순서 번호
 
@@ -728,36 +800,41 @@ function getKeyPlayers() {
           nationality: cols.nationality !== -1 ? String(row[cols.nationality] || '').trim() : '',
           chipCount: cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0,
           photoUrl: photoUrl,           // PlayerPhotos 시트 B열
-          introduction: isIntroduced,   // PlayerPhotos 시트 E열 (Phase 3.5.1)
-          displayOrder: displayOrder    // PlayerPhotos 시트 F열 (Phase 3.5.2)
+          playerType: playerType,       // PlayerPhotos 시트 D열 (Phase 3.6.0)
+          introduction: isIntroduced,   // PlayerPhotos 시트 E열
+          displayOrder: displayOrder    // PlayerPhotos 시트 F열
         };
       })
-      .filter(p => p.tableNo > 0 && p.seatNo > 0 && p.playerName)
+      .filter(p => {
+        // Phase 3.6.0: Feature 플레이어 제외 (피처 테이블 전용)
+        if (p.playerType === 'Feature') return false;
+        return p.tableNo > 0 && p.seatNo > 0 && p.playerName;
+      })
       .sort((a, b) => {
-        // Phase 3.5.4: Introduction 체크박스 기반 정렬 (없으면 DisplayOrder 기반)
+        // Phase 3.6.0: PlayerType → Introduction → DisplayOrder → PlayerName 정렬
 
-        // Introduction 컬럼이 있는 경우 (체크박스 사용)
+        // 1. PlayerType 우선순위 (Core > Key player)
+        const playerTypeOrder = { 'Core': 1, 'Key player': 2 };
+        const aTypeOrder = playerTypeOrder[a.playerType] || 99;
+        const bTypeOrder = playerTypeOrder[b.playerType] || 99;
+        if (aTypeOrder !== bTypeOrder) {
+          return aTypeOrder - bTypeOrder;
+        }
+
+        // 2. Introduction 우선순위 (true > false) - 동일 PlayerType 그룹 내
         const hasIntroduction = a.introduction !== undefined || b.introduction !== undefined;
-
         if (hasIntroduction) {
-          // 1. Introduction 우선순위 (true > false)
           if (a.introduction !== b.introduction) {
             return b.introduction ? 1 : -1;
           }
-
-          // 2. DisplayOrder 오름차순 (동일 Introduction 그룹 내)
-          if (a.displayOrder !== b.displayOrder) {
-            return a.displayOrder - b.displayOrder;
-          }
-        } else {
-          // Introduction 컬럼이 없는 경우 (이전 로직)
-          // 1. DisplayOrder 오름차순
-          if (a.displayOrder !== b.displayOrder) {
-            return a.displayOrder - b.displayOrder;
-          }
         }
 
-        // 마지막: PlayerName 알파벳 순
+        // 3. DisplayOrder 오름차순 (동일 PlayerType + Introduction 그룹 내)
+        if (a.displayOrder !== b.displayOrder) {
+          return a.displayOrder - b.displayOrder;
+        }
+
+        // 4. PlayerName 알파벳 순 (최종 정렬)
         return a.playerName.localeCompare(b.playerName);
       });
 
@@ -1194,14 +1271,14 @@ function updateIntroduction(playerName, isIntroduced) {
       }
 
       if (targetRow !== -1) {
-        // UPDATE: 기존 행의 Introduction 업데이트
+        // UPDATE: 기존 행의 Introduction 업데이트 (Phase 3.6.0)
         sheet.getRange(targetRow, 5).setValue(Boolean(isIntroduced));  // E열 Introduction
-        sheet.getRange(targetRow, 4).setValue(now);                    // D열 UpdatedAt
+        sheet.getRange(targetRow, 7).setValue(now);                    // G열 UpdatedAt
         log_(LOG_LEVEL.INFO, 'updateIntroduction', 'Introduction 업데이트', { playerName: validName, row: targetRow });
       } else {
-        // INSERT: 새 플레이어 추가 (PhotoURL 없이)
-        // A: PlayerName, B: PhotoURL, C: CreatedAt, D: UpdatedAt, E: Introduction
-        sheet.appendRow([validName, '', now, now, Boolean(isIntroduced)]);
+        // INSERT: 새 플레이어 추가 (PhotoURL 없이) (Phase 3.6.0: 7열 구조)
+        // A: PlayerName, B: PhotoURL, C: CreatedAt, D: PlayerType, E: Introduction, F: DisplayOrder, G: UpdatedAt
+        sheet.appendRow([validName, '', now, 'Key player', Boolean(isIntroduced), 0, now]);
         log_(LOG_LEVEL.INFO, 'updateIntroduction', 'Introduction 추가', { playerName: validName });
       }
 

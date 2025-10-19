@@ -2,6 +2,43 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.6.0 (2025-01-19) - PlayerType Management 🎭
+
+### 🎭 핵심 기능
+**PlayerType 드롭다운 메뉴 (D열)**:
+- **Core**: 최상단 배치
+- **Key player**: 기본값
+- **Feature**: 키 플레이어 목록 제외 (피처 테이블 전용)
+
+### 📊 정렬 우선순위
+```
+1. PlayerType (Core > Key player)
+2. Introduction (true > false)
+3. DisplayOrder (오름차순)
+4. PlayerName (알파벳 순)
+```
+
+### 🔄 PlayerPhotos 구조 (7열)
+```
+A: PlayerName | B: PhotoURL | C: CreatedAt | D: PlayerType |
+E: Introduction | F: DisplayOrder | G: UpdatedAt
+```
+
+### ✨ 수정 함수
+1. `ensurePlayerPhotosSheet_()`: 7열 구조 + 드롭다운 + 마이그레이션 (4열/6열→7열)
+2. `getAllPlayerPhotosMap_()`: PlayerType 읽기
+3. `getKeyPlayers()`: Feature 제외 + 4단계 정렬
+4. `setPlayerPhotoUrl_()`, `updateIntroduction()`: G열 UpdatedAt 대응
+
+### 🎯 마이그레이션
+- **자동 실행**: 4열/6열 → 7열 (UpdatedAt D→G, PlayerType D 추가)
+- **기본값**: PlayerType='Key player'
+
+### 📊 성능
+- 성능 영향: 0ms (클라이언트 정렬)
+
+---
+
 ## v3.5.5 (2025-01-19) - Fallback Sorting Logic 🔄
 
 ### 🔄 핵심 기능

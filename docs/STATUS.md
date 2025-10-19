@@ -3,20 +3,42 @@
 > **현재 상태** | 버전: [version.js](../version.js) 참조
 
 ## 📌 현재 위치
-**버전**: v3.5.5 (2025-01-19) - [version.js](../version.js)에서 관리
-**현재 상태**: ✅ **안정 버전** - Phase 3.5.5 완료, 배포 준비 완료
+**버전**: v3.6.0 (2025-01-19) - [version.js](../version.js)에서 관리
+**현재 상태**: ✅ **안정 버전** - Phase 3.6.0 완료, 배포 완료
 
 ---
 
 ## ⚠️ 블로커 (Critical)
 
-없음 - Phase 3.5.5 완료
+없음 - Phase 3.6.0 완료
 
 ---
 
 ## ✅ 최근 완료 (최신 5개)
 
-### 1. v3.5.5 - Fallback 정렬 로직 ✅ 완료
+### 1. v3.6.0 - PlayerType 관리 (Core/Key player/Feature) ✅ 완료
+**날짜**: 2025-01-19
+**변경사항**:
+- ✅ PlayerPhotos D열 PlayerType 드롭다운 추가 (Core/Key player/Feature)
+- ✅ Core 플레이어 최상단 배치 (최고 우선순위)
+- ✅ Feature 플레이어 키 목록 제외 (피처 테이블 전용)
+- ✅ 4단계 정렬: PlayerType > Introduction > DisplayOrder > PlayerName
+- ✅ 자동 마이그레이션: 4열/6열 → 7열 (UpdatedAt D→G)
+- ✅ ensurePlayerPhotosSheet_() 마이그레이션 로직 추가
+- ✅ getAllPlayerPhotosMap_() PlayerType 읽기
+- ✅ getKeyPlayers() 필터링 + 정렬 수정
+- ✅ setPlayerPhotoUrl_(), updateIntroduction() G열 대응
+- ✅ 성능 영향 0ms (클라이언트 정렬)
+- ✅ 버전 업데이트 (v3.5.5 → v3.6.0)
+
+**파일 변경**:
+- tracker_gs.js (5개 함수 수정)
+- version.js (v3.6.0)
+- CHANGELOG.md (v3.6.0 섹션)
+
+---
+
+### 2. v3.5.5 - Fallback 정렬 로직 ✅ 완료
 **날짜**: 2025-01-19
 **변경사항**:
 - ✅ Introduction 컬럼 존재 여부 자동 감지 (헤더 체크)
