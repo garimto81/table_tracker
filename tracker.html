@@ -81,6 +81,20 @@ h2{margin:0 0 var(--sp-sm);color:#a9b8ff;font-size:1rem}
 /* === Player Photo (Phase 3.1) === */
 .keyPlayerCardPro{background:linear-gradient(135deg,#1a1d2e,#252a42);border:2px solid #3a4a6f;border-radius:var(--sp-md);padding:var(--sp-md);margin-bottom:var(--sp-sm);display:flex;gap:var(--sp-md);align-items:center;cursor:pointer;transition:all .2s}
 .keyPlayerCardPro:hover{border-color:#4a5a8f;transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.4)}
+
+/* Phase 3.6.1: Feature 플레이어 흐림 처리 */
+.keyPlayerCardPro.feature{opacity:0.5;filter:grayscale(50%);pointer-events:none;position:relative}
+.keyPlayerCardPro.feature::before{content:'🎬 FEATURE TABLE';position:absolute;top:8px;right:8px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;padding:4px 12px;border-radius:12px;font-size:0.8rem;font-weight:bold;z-index:10}
+
+/* Feature 섹션 접기/펼치기 */
+.featureSection{margin-bottom:var(--sp-md)}
+.featureSectionHeader{background:linear-gradient(135deg,#1e2a45,#2a3556);border:1px solid #3a4a6f;border-radius:var(--sp-md);padding:var(--sp-md);display:flex;justify-content:space-between;align-items:center;cursor:pointer;transition:all .2s}
+.featureSectionHeader:hover{border-color:#4a5a8f}
+.featureSectionTitle{font-size:1.4rem;font-weight:700;color:#cbd5e1;display:flex;align-items:center;gap:var(--sp-sm)}
+.featureToggleBtn{background:transparent;border:1px solid #6b7280;color:#9aa3b2;padding:var(--sp-xs) var(--sp-md);border-radius:var(--sp-sm);font-size:1.1rem;cursor:pointer;transition:all .2s}
+.featureToggleBtn:hover{border-color:#cbd5e1;color:#cbd5e1}
+.featureSectionContent{margin-top:var(--sp-sm);display:none}
+.featureSectionContent.show{display:block}
 .playerPhotoPro{width:96px;height:96px;border-radius:var(--sp-sm);object-fit:cover;border:2px solid #3a4a6f;flex-shrink:0;background:#0b0d12}
 .playerPhotoPro.empty{display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:var(--muted)}
 .playerDetailsPro{flex:1;display:flex;flex-direction:column;gap:var(--sp-xs);min-width:0}
@@ -377,11 +391,33 @@ function renderKeyPlayers(players) {
   }
 
   list.innerHTML = '';
-  countHeader.textContent = 'Key Players (' + players.length + ')';
 
-  players.forEach(p => {
+  // Phase 3.6.1: Feature 플레이어 분리 (최하단 배치)
+  const featurePlayers = players.filter(p => p.playerType === 'Feature');
+  const activePlayers = players.filter(p => p.playerType !== 'Feature');
+
+  countHeader.textContent = 'Key Players (' + activePlayers.length + ')';
+
+  // 활성 플레이어 렌더링 (Core, Key player)
+  activePlayers.forEach(p => {
+    renderPlayerCard(p, list, false);
+  });
+
+  // Feature 섹션 렌더링 (접힌 상태, 최하단)
+  if (featurePlayers.length > 0) {
+    renderFeatureSection(featurePlayers, list);
+  }
+}
+
+/**
+ * 플레이어 카드 렌더링 (공통 함수)
+ * @param {Object} p - 플레이어 데이터
+ * @param {HTMLElement} list - 부모 리스트 요소
+ * @param {boolean} isFeature - Feature 플레이어 여부
+ */
+function renderPlayerCard(p, list, isFeature) {
     const card = document.createElement('div');
-    card.className = 'keyPlayerCardPro';
+    card.className = isFeature ? 'keyPlayerCardPro feature' : 'keyPlayerCardPro';
 
     // 국가 players
     const countryName = getCountryName(p.nationality);
@@ -407,16 +443,32 @@ function renderKeyPlayers(players) {
     playerName.style.alignItems = 'center';
     playerName.style.gap = 'var(--sp-xs)';
 
-    // 번호 뱃지
+    // 번호 뱃지 (Phase 3.6.1: PlayerType 아이콘 추가)
     const badge = document.createElement('span');
     badge.className = 'playerNumberBadge';
-    badge.textContent = '#' + (p.displayOrder || 0);
+
+    // PlayerType 아이콘
+    let typeIcon = '';
+    let badgeBackground = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; // 기본 (Key player)
+
+    if (p.playerType === 'Core') {
+      typeIcon = '👑 ';
+      badgeBackground = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'; // 금색 그라디언트
+    } else if (p.playerType === 'Key player') {
+      typeIcon = '⭐ ';
+      badgeBackground = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; // 보라색 그라디언트
+    } else if (p.playerType === 'Feature') {
+      typeIcon = '🎬 ';
+      badgeBackground = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'; // 회색 그라디언트
+    }
+
+    badge.textContent = typeIcon + '#' + (p.displayOrder || 0);
     badge.style.display = 'inline-block';
     badge.style.padding = '2px 8px';
     badge.style.fontSize = '0.9rem';
     badge.style.fontWeight = 'bold';
     badge.style.color = '#fff';
-    badge.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    badge.style.background = badgeBackground;
     badge.style.borderRadius = '12px';
     badge.style.minWidth = '32px';
     badge.style.textAlign = 'center';
@@ -580,7 +632,52 @@ function renderKeyPlayers(players) {
     }
 
     list.appendChild(card);
+}
+
+/**
+ * Feature 섹션 렌더링 (접기/펼치기)
+ * @param {Array} featurePlayers - Feature 플레이어 배열
+ * @param {HTMLElement} list - 부모 리스트 요소
+ */
+function renderFeatureSection(featurePlayers, list) {
+  const section = document.createElement('div');
+  section.className = 'featureSection';
+
+  const header = document.createElement('div');
+  header.className = 'featureSectionHeader';
+
+  const title = document.createElement('div');
+  title.className = 'featureSectionTitle';
+  title.textContent = '🎬 Feature Table (' + featurePlayers.length + ' players) - Monitoring Off';
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'featureToggleBtn';
+  toggleBtn.textContent = '▼ Show';
+
+  header.appendChild(title);
+  header.appendChild(toggleBtn);
+
+  const content = document.createElement('div');
+  content.className = 'featureSectionContent';
+
+  // Feature 플레이어 카드 렌더링
+  featurePlayers.forEach(p => {
+    renderPlayerCard(p, content, true);
   });
+
+  // 토글 이벤트
+  header.addEventListener('click', () => {
+    content.classList.toggle('show');
+    if (content.classList.contains('show')) {
+      toggleBtn.textContent = '▲ Hide';
+    } else {
+      toggleBtn.textContent = '▼ Show';
+    }
+  });
+
+  section.appendChild(header);
+  section.appendChild(content);
+  list.appendChild(section);
 }
 
 /* ===== Table View ===== */
