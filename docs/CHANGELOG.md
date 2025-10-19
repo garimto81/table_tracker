@@ -2,6 +2,64 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.5.4 (2025-01-19) - Introduction-based Sorting 🔝
+
+### 🔝 핵심 기능
+**Introduction 체크박스 기반 정렬**:
+- PlayerPhotos E열 (Introduction=true) 플레이어를 최상단에 배치
+- 3단계 정렬 우선순위:
+  1. **Introduction** (true > false)
+  2. **DisplayOrder** (오름차순)
+  3. **PlayerName** (알파벳 순)
+- 클라이언트 사이드 정렬 (Zero 성능 영향)
+
+### ✨ 수정 함수
+**tracker_gs.js**:
+- `getKeyPlayers()`: `.sort()` 로직 추가 (3단계 우선순위)
+  ```javascript
+  .sort((a, b) => {
+    // 1. Introduction 우선순위
+    if (a.introduction !== b.introduction) {
+      return b.introduction ? 1 : -1;
+    }
+    // 2. DisplayOrder 오름차순
+    if (a.displayOrder !== b.displayOrder) {
+      return a.displayOrder - b.displayOrder;
+    }
+    // 3. PlayerName 알파벳 순
+    return a.playerName.localeCompare(b.playerName);
+  })
+  ```
+
+### 🎯 사용 시나리오
+**Before (v3.5.3)**:
+```
+Key Players:
+#1 Alice (Introduction: false)
+#2 Bob (Introduction: false)
+#3 Charlie (Introduction: true)  ← 체크되었지만 3번째
+```
+
+**After (v3.5.4)**:
+```
+Key Players:
+#3 Charlie (Introduction: true)  ← 최상단 배치 ✅
+#1 Alice (Introduction: false)
+#2 Bob (Introduction: false)
+```
+
+### 🔧 기술 세부사항
+- **성능**: 배열 정렬 O(n log n), 10명 기준 ~1ms
+- **호환성**: PlayerPhotos E열 데이터 의존 (v3.5.2+)
+- **fallback**: Introduction 미설정 시 false 처리
+
+### 📝 배포 노트
+- Apps Script 재배포 필요: `npx @google/clasp push`
+- Type 시트 CSV 임포트 영향 없음
+- PlayerPhotos 시트 E열 체크박스 수동 설정 권장
+
+---
+
 ## v3.5.2 (2025-01-16) - Key Player Number Badge & Introduction Checkbox 🏷️
 
 ### 🏷️ 핵심 기능

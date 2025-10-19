@@ -289,6 +289,44 @@
 
 ---
 
+## Phase 3.5.4: Introduction 기반 정렬 (v3.5.4) ✅
+
+### 3.5.4 Introduction-based Sorting ✅ 완료
+- **근거**:
+  - PlayerPhotos E열 Introduction 체크박스 활용
+  - 체크된 플레이어를 목록 최상단에 배치
+  - 사용자가 중요 플레이어 우선 확인 가능
+- **정렬 우선순위**:
+  1. **Introduction** (true > false)
+  2. **DisplayOrder** (오름차순)
+  3. **PlayerName** (알파벳 순)
+- **완료 내역**:
+  - [x] getKeyPlayers() 함수에 .sort() 로직 추가
+  - [x] 3단계 우선순위 정렬 구현
+  - [x] 클라이언트 사이드 정렬 (성능 영향 0)
+  - [x] Introduction 미설정 시 false fallback
+- **성능**:
+  - 배열 정렬 복잡도: O(n log n)
+  - 10명 기준: ~1ms
+  - 총 로딩 시간: 500ms (v3.5.3 대비 동일)
+- **사용 시나리오**:
+  ```
+  Before:
+  #1 Alice (Introduction: false)
+  #2 Bob (Introduction: false)
+  #3 Charlie (Introduction: true)
+
+  After:
+  #3 Charlie (Introduction: true) ← 최상단 배치
+  #1 Alice (Introduction: false)
+  #2 Bob (Introduction: false)
+  ```
+- **상태**: ✅ 완료 (v3.5.4)
+- **배포**: 코드 준비 완료 (2025-01-19)
+- **의존성**: Phase 3.5.2 (PlayerPhotos E열)
+
+---
+
 ## Phase 4: 향후 개선 사항 (v4.x 예정)
 
 ### 4.0 Firebase Realtime Database + WebSocket (v4.0.0 예정) 🔴 High

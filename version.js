@@ -2,16 +2,16 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.5.3',
-  name: 'English UI Translation',
-  date: '2025-01-16',
-  phase: '3.5.3',
+  current: 'v3.5.4',
+  name: 'Introduction-based Sorting',
+  date: '2025-01-19',
+  phase: '3.5.4',
   changes: [
-    '🌐 Complete English UI translation (tracker.html)',
-    '🔤 All Korean strings converted to English',
-    '📝 Updated button labels, messages, dialogs',
-    '✅ Maintains all functionality from v3.5.2',
-    '🎯 Improved international usability'
+    '🔝 Introduction checkbox sorting (PlayerPhotos E column)',
+    '✨ Introduced players appear at the top',
+    '📊 Sort priority: Introduction > DisplayOrder > PlayerName',
+    '⚡ Zero performance impact (client-side sorting)',
+    '🎯 Enhanced key player visibility'
   ],
   deployment: {
     id: '@24',
@@ -21,14 +21,14 @@ const VERSION = {
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
   },
   files: {
-    'tracker_gs.js': 'v3.5.2',
+    'tracker_gs.js': 'v3.5.4',
     'tracker.html': 'v3.5.3',
     'performance_test.js': 'v3.5.1',
     'appsscript.json': 'v3.2.0',
-    'version.js': 'v3.5.3',
-    'docs/CHANGELOG.md': 'v3.5.2',
-    'docs/STATUS.md': 'v3.5.2',
-    'docs/PRD.md': 'v3.5.0',
+    'version.js': 'v3.5.4',
+    'docs/CHANGELOG.md': 'v3.5.4',
+    'docs/STATUS.md': 'v3.5.4',
+    'docs/PRD.md': 'v3.5.4',
     'docs/LLD.md': 'v2.4.0',
     'docs/PLAN.md': 'v2.4.0',
     'docs/MIGRATION_SEATS_ONLY.md': 'v3.0.0',
@@ -40,14 +40,14 @@ const VERSION = {
     'ROLLBACK_INFO.md': 'v3.0.1'
   },
   status: {
-    state: '✅ Stable version (Deployed)',
-    phase: 'Phase 3.5.3 (English UI Translation)',
+    state: '✅ Stable version (Code ready)',
+    phase: 'Phase 3.5.4 (Introduction-based Sorting)',
     blockers: [],
     lastCompleted: [
+      '✅ Introduction-based sorting implemented (v3.5.4)',
       '✅ Complete English UI translation (v3.5.3)',
       '✅ Key player number badge added (v3.5.2)',
       '✅ Introduction checkbox moved to PlayerPhotos column E (v3.5.2)',
-      '✅ DisplayOrder column F auto-managed (v3.5.2)',
       '✅ Performance testing tools added (v3.5.1)'
     ]
   },

@@ -10,11 +10,11 @@
 
 /* ===== 버전 관리 ===== */
 // version.js에서 버전 정보 로드 (Google Apps Script 환경)
-let TRACKER_VERSION = 'v3.5.2'; // Fallback version
+let TRACKER_VERSION = 'v3.5.4'; // Fallback version
 try {
   // version.js가 같은 프로젝트에 있다면 로드 시도
   // Google Apps Script는 require() 미지원이므로 수동 동기화 필요
-  TRACKER_VERSION = 'v3.5.2'; // version.js의 VERSION.current와 수동 동기화
+  TRACKER_VERSION = 'v3.5.4'; // version.js의 VERSION.current와 수동 동기화
 } catch (e) {
   Logger.log('version.js 로드 실패, fallback 버전 사용: ' + TRACKER_VERSION);
 }
@@ -726,7 +726,22 @@ function getKeyPlayers() {
           displayOrder: displayOrder    // PlayerPhotos 시트 F열 (Phase 3.5.2)
         };
       })
-      .filter(p => p.tableNo > 0 && p.seatNo > 0 && p.playerName);
+      .filter(p => p.tableNo > 0 && p.seatNo > 0 && p.playerName)
+      .sort((a, b) => {
+        // Phase 3.5.3: Introduction 체크된 플레이어를 최상단에 배치
+        // 1. Introduction 우선순위 (true > false)
+        if (a.introduction !== b.introduction) {
+          return b.introduction ? 1 : -1;
+        }
+
+        // 2. DisplayOrder 오름차순 (동일 Introduction 그룹 내)
+        if (a.displayOrder !== b.displayOrder) {
+          return a.displayOrder - b.displayOrder;
+        }
+
+        // 3. PlayerName 알파벳 순 (동일 DisplayOrder 시)
+        return a.playerName.localeCompare(b.playerName);
+      });
 
     log_(LOG_LEVEL.INFO, 'getKeyPlayers', '키 플레이어 조회 완료', {
       count: players.length,
