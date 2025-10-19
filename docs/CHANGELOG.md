@@ -2,6 +2,56 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.6.3 (2025-01-19) - Virtual Table Numbers for Feature Tables 🎯
+
+### 🎯 핵심 기능
+**가상 테이블 번호로 충돌 방지**:
+- TableName="feature" 감지 시 T1 → T1001, T2 → T1002 변환
+- 내부 로직: 가상 번호 사용, UI 표시: 원본 번호 유지
+- PlayerType을 PlayerPhotos 시트에서만 읽기 (Type 시트 D열은 PlayerType 아님)
+
+### 📊 데이터 소스 명확화
+**두 개의 시트 역할 분리**:
+- **Type 시트** (19e7e...): 실시간 테이블 배치 (TableName, TableNo, seat 정보)
+- **PlayerPhotos 시트** (1bGotri...): 플레이어 메타데이터 (PlayerType, PhotoURL 등)
+
+### 🔄 Type 시트 구조
+```
+A: PokerRoom | B: TableName | C: TableId | D: TableNo | E: SeatId |
+F: SeatNo | G: PlayerId | H: PlayerName | I: Nationality | J: ChipCount |
+K: Key Player | L: Initial name
+```
+- **중요**: D열은 TableNo이며, PlayerType이 아님!
+
+### 🔄 PlayerPhotos 시트 구조 (7열)
+```
+A: PlayerName | B: PhotoURL | C: CreatedAt | D: PlayerType |
+E: Introduction | F: DisplayOrder | G: UpdatedAt
+```
+
+### ✨ 수정 함수
+1. `readAll_Optimized_()`: "Confirmed Players" 제목 행 자동 스킵
+2. `getAllPlayerPhotosMap_()`: PlayerPhotos 시트에서만 PlayerType 읽기
+3. `getKeyPlayers()`: 가상 테이블 번호 + 테이블 레벨 타입 전파 (Feature > Core)
+4. Type 시트 cols 정의: `playerType: 3` 제거 (존재하지 않는 컬럼)
+
+### 🎬 Feature 플레이어 처리
+- **감지**: TableName="feature" 또는 PlayerPhotos PlayerType="Feature"
+- **가상 번호**: tableNo = 1000 + originalTableNo
+- **테이블 전파**: Feature/Core 테이블의 모든 플레이어가 해당 타입 상속
+- **UI**: opacity 0.5, grayscale, 하단 배치, 비활성화
+
+### 📊 정렬 우선순위
+```
+1. PlayerType (Core > Key player > Feature)
+2. TableNo (오름차순, 가상 번호 포함)
+3. Introduction (true > false)
+4. DisplayOrder (오름차순)
+5. PlayerName (알파벳 순)
+```
+
+---
+
 ## v3.6.0 (2025-01-19) - PlayerType Management 🎭
 
 ### 🎭 핵심 기능

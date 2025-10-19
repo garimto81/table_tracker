@@ -347,37 +347,107 @@ function showTableView(tableId) {
 }
 
 /* ===== Key Player View ===== */
+const CACHE_TTL = 5 * 60 * 1000; // 5분
+const CACHE_KEY = 'keyPlayers_cache_v1';
+const CACHE_TIME_KEY = 'keyPlayers_cacheTime_v1';
+
 function loadKeyPlayers() {
   // Firebase가 활성화되면 이 함수는 호출되지 않음 (실시간 구독이 대체)
+  loadKeyPlayersWithCache();
+}
+
+/**
+ * LocalStorage 캐시를 활용한 Key Player 로딩 (Stale-While-Revalidate)
+ */
+function loadKeyPlayersWithCache() {
+  const cachedData = localStorage.getItem(CACHE_KEY);
+  const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+
+  if (cachedData && cachedTime) {
+    const age = Date.now() - parseInt(cachedTime);
+    if (age < CACHE_TTL) {
+      console.log('[Cache HIT] Age:', Math.round(age / 1000) + 's');
+      const players = JSON.parse(cachedData);
+      keyPlayers = players;
+      renderKeyPlayers(players);
+
+      // 백그라운드에서 최신 데이터 조회 (Stale-While-Revalidate)
+      fetchLatestKeyPlayers(true);
+      return;
+    } else {
+      console.log('[Cache EXPIRED] Age:', Math.round(age / 1000) + 's');
+    }
+  }
+
+  // 캐시 미스: 서버에서 로드 (로딩 UI 표시)
+  console.log('[Cache MISS] Fetching from server');
   loadKeyPlayersFromSheets();
 }
 
-function loadKeyPlayersFromSheets() {
-  const list = document.getElementById('keyPlayerList');
-
-  // 로딩 표시 (단일 오버레이)
-  LoadingManager.show({
-    message: 'Loading key players',
-    hint: 'Please wait',
-    timeout: 30000
-  });
+/**
+ * 최신 Key Player 데이터 조회 (백그라운드)
+ * @param {boolean} silent - true일 경우 로딩 UI 없이 조용히 업데이트
+ */
+function fetchLatestKeyPlayers(silent = false) {
+  if (!silent) {
+    LoadingManager.show({
+      message: 'Loading key players',
+      hint: 'Please wait',
+      timeout: 30000
+    });
+  }
 
   google.script.run
     .withSuccessHandler(response => {
+      if (!silent) {
+        LoadingManager.hide();
+      }
+
       if (!response.success) {
-        LoadingManager.hide('error', 'Failed to load data: ' + (response.error?.message || 'Unknown error'));
+        if (!silent) {
+          LoadingManager.showToast('Failed to load data: ' + (response.error?.message || 'Unknown error'), 'error');
+        }
         return;
       }
 
       const players = response.data.players;
-      keyPlayers = players;
-      renderKeyPlayers(players);
-      LoadingManager.hide(); // 렌더링 완료 후 숨김 (토스트 없음)
+
+      // 캐시 저장
+      localStorage.setItem(CACHE_KEY, JSON.stringify(players));
+      localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
+      console.log('[Cache SAVED] Entries:', players.length);
+
+      // 데이터 변경 시에만 렌더링 (성능 최적화)
+      const currentHash = JSON.stringify(keyPlayers);
+      const newHash = JSON.stringify(players);
+      if (currentHash !== newHash) {
+        console.log('[Data Changed] Re-rendering');
+        keyPlayers = players;
+        renderKeyPlayers(players);
+      } else {
+        console.log('[Data Same] Skip rendering');
+      }
     })
     .withFailureHandler(err => {
-      LoadingManager.hide('error', 'Network error: ' + err.message);
+      if (!silent) {
+        LoadingManager.hide('error', 'Network error: ' + err.message);
+      }
+      console.error('[Fetch ERROR]', err.message);
     })
     .getKeyPlayers();
+}
+
+function loadKeyPlayersFromSheets() {
+  fetchLatestKeyPlayers(false);
+}
+
+/**
+ * 캐시 무효화 (사진/타입 업데이트 후 호출)
+ */
+function invalidateKeyPlayersCache() {
+  localStorage.removeItem(CACHE_KEY);
+  localStorage.removeItem(CACHE_TIME_KEY);
+  console.log('[Cache INVALIDATED]');
 }
 
 function renderKeyPlayers(players) {
@@ -392,21 +462,15 @@ function renderKeyPlayers(players) {
 
   list.innerHTML = '';
 
-  // Phase 3.6.1: Feature 플레이어 분리 (최하단 배치)
-  const featurePlayers = players.filter(p => p.playerType === 'Feature');
-  const activePlayers = players.filter(p => p.playerType !== 'Feature');
+  // Phase 3.6.1: 활성 플레이어 수 계산 (Feature 제외)
+  const activeCount = players.filter(p => p.playerType !== 'Feature').length;
+  countHeader.textContent = 'Key Players (' + activeCount + ')';
 
-  countHeader.textContent = 'Key Players (' + activePlayers.length + ')';
-
-  // 활성 플레이어 렌더링 (Core, Key player)
-  activePlayers.forEach(p => {
-    renderPlayerCard(p, list, false);
+  // 모든 플레이어 렌더링 (Feature는 비활성화 상태로 최하단)
+  players.forEach(p => {
+    const isFeature = p.playerType === 'Feature';
+    renderPlayerCard(p, list, isFeature);
   });
-
-  // Feature 섹션 렌더링 (접힌 상태, 최하단)
-  if (featurePlayers.length > 0) {
-    renderFeatureSection(featurePlayers, list);
-  }
 }
 
 /**
@@ -488,7 +552,9 @@ function renderPlayerCard(p, list, isFeature) {
     locationIcon.className = 'icon';
     locationIcon.textContent = '📍';
     locationSpan.appendChild(locationIcon);
-    locationSpan.appendChild(document.createTextNode(formatTableNo(p.tableNo) + ', ' + formatSeatNo(p.seatNo)));
+    // Phase 3.6.3: 가상 테이블 번호는 원본 번호로 표시
+    const displayTableNo = p.originalTableNo || p.tableNo;
+    locationSpan.appendChild(document.createTextNode(formatTableNo(displayTableNo) + ', ' + formatSeatNo(p.seatNo)));
 
     const countrySpan = document.createElement('span');
     countrySpan.className = 'countryNamePro';
@@ -1293,7 +1359,11 @@ function confirmPhotoEdit(playerName) {
     action: 'updateKeyPlayerPhoto',
     params: [playerName, photoUrl],
     loadingMessage: 'Saving photo URL',
-    successMessage: '✅ Photo saved successfully'
+    successMessage: '✅ Photo saved successfully',
+    onSuccess: () => {
+      // 캐시 무효화 (즉시 반영)
+      invalidateKeyPlayersCache();
+    }
   });
 }
 
@@ -1461,6 +1531,7 @@ function handlePhotoCapture(e, playerName) {
             .withSuccessHandler(saveResponse => {
               if (saveResponse.success) {
                 LoadingManager.hide('success', '✅ Photo saved successfully');
+                invalidateKeyPlayersCache(); // 캐시 무효화
                 loadKeyPlayers();
               } else {
                 LoadingManager.hide('error', 'Save failed: ' + (saveResponse.error?.message || 'Unknown error'));

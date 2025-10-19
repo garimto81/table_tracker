@@ -10,11 +10,11 @@
 
 /* ===== 버전 관리 ===== */
 // version.js에서 버전 정보 로드 (Google Apps Script 환경)
-let TRACKER_VERSION = 'v3.6.0'; // Fallback version
+let TRACKER_VERSION = 'v3.6.3'; // Fallback version
 try {
   // version.js가 같은 프로젝트에 있다면 로드 시도
   // Google Apps Script는 require() 미지원이므로 수동 동기화 필요
-  TRACKER_VERSION = 'v3.6.0'; // version.js의 VERSION.current와 수동 동기화
+  TRACKER_VERSION = 'v3.6.3'; // version.js의 VERSION.current와 수동 동기화
 } catch (e) {
   Logger.log('version.js 로드 실패, fallback 버전 사용: ' + TRACKER_VERSION);
 }
@@ -231,10 +231,10 @@ function getSheetData_(forceRefresh = false) {
 
   const data = readAll_Optimized_(sh);
 
-  // Seats.csv 기반 구조 (14개 컬럼) + Phase 3.1 PhotoURL (Type 시트 N열은 레거시, 실제 사용은 PlayerPhotos)
+  // Type 시트 구조 (실시간 테이블 배치)
   // K열 Keyplayer는 헤더 무관하게 인덱스 10으로 고정
   // N열 PhotoURL은 헤더 무관하게 인덱스 13으로 고정 (읽기 전용, PlayerPhotos 우선)
-  // Phase 3.5.1: Introduction은 PlayerPhotos 시트 C열에서 관리
+  // Phase 3.6.3: PlayerType은 Type 시트에 없음 → PlayerPhotos 시트에서만 읽음
   const cols = {
     pokerRoom: findColIndex_(data.header, ['PokerRoom', 'Poker Room', 'poker_room']),
     tableName: findColIndex_(data.header, ['TableName', 'Table Name', 'table_name']),
@@ -308,8 +308,15 @@ function readAll_Optimized_(sh) {
     return { header: values[0] || [], rows: [], map: {} };
   }
 
-  const header = values[0];
-  const rows = values.slice(1);
+  // Phase 3.6.2: "Confirmed Players" 제목 행 자동 스킵
+  let headerRowIndex = 0;
+  if (values[0][0] === 'Confirmed Players' || String(values[0][0]).includes('Confirmed')) {
+    log_(LOG_LEVEL.INFO, 'readAll_Optimized_', '제목 행 감지, Row 2를 헤더로 사용');
+    headerRowIndex = 1;
+  }
+
+  const header = values[headerRowIndex];
+  const rows = values.slice(headerRowIndex + 1);
   const map = {};
   header.forEach((h, i) => map[String(h).trim()] = i);
 
@@ -504,10 +511,74 @@ function ensurePlayerPhotosSheet_() {
 }
 
 /**
- * PlayerPhotos 시트 전체를 Map으로 배치 로딩 (Performance Optimization)
+ * PlayerPhotos Map 캐시 (PropertiesService, 10분 TTL)
  * @return {Object} { playerName: { photoUrl, playerType, introduction, displayOrder } } Map
  */
-function getAllPlayerPhotosMap_() {
+function getAllPlayerPhotosMap_Cached() {
+  const cache = PropertiesService.getScriptProperties();
+  const cacheKey = 'playerPhotosMap_cache_v1';
+  const cacheTimeKey = 'playerPhotosMap_cacheTime_v1';
+  const CACHE_TTL = 10 * 60 * 1000; // 10분
+
+  try {
+    // 캐시 확인
+    const cachedData = cache.getProperty(cacheKey);
+    const cachedTime = cache.getProperty(cacheTimeKey);
+
+    if (cachedData && cachedTime) {
+      const age = Date.now() - parseInt(cachedTime);
+      if (age < CACHE_TTL) {
+        const cacheAgeSeconds = Math.round(age / 1000);
+        log_(LOG_LEVEL.INFO, 'getAllPlayerPhotosMap_Cached', '[Cache HIT] Age: ' + cacheAgeSeconds + 's');
+        return JSON.parse(cachedData);
+      } else {
+        log_(LOG_LEVEL.INFO, 'getAllPlayerPhotosMap_Cached', '[Cache EXPIRED] Age: ' + Math.round(age / 1000) + 's');
+      }
+    }
+
+    // 캐시 미스: Sheets에서 로드
+    log_(LOG_LEVEL.INFO, 'getAllPlayerPhotosMap_Cached', '[Cache MISS] Fetching from Sheets');
+    const photoMap = getAllPlayerPhotosMap_Raw_();
+
+    // 캐시 저장 (최대 9KB 제한 고려)
+    try {
+      cache.setProperties({
+        [cacheKey]: JSON.stringify(photoMap),
+        [cacheTimeKey]: String(Date.now())
+      });
+      log_(LOG_LEVEL.INFO, 'getAllPlayerPhotosMap_Cached', '[Cache SAVED] Entries: ' + Object.keys(photoMap).length);
+    } catch (cacheError) {
+      log_(LOG_LEVEL.WARN, 'getAllPlayerPhotosMap_Cached', '[Cache SAVE FAILED] ' + cacheError.message);
+    }
+
+    return photoMap;
+
+  } catch (e) {
+    log_(LOG_LEVEL.WARN, 'getAllPlayerPhotosMap_Cached', '[Cache ERROR] Fallback to direct fetch: ' + e.message);
+    return getAllPlayerPhotosMap_Raw_();
+  }
+}
+
+/**
+ * 캐시 무효화 (사진/타입 업데이트 시 호출)
+ */
+function invalidatePlayerPhotosCache_() {
+  try {
+    const cache = PropertiesService.getScriptProperties();
+    cache.deleteProperty('playerPhotosMap_cache_v1');
+    cache.deleteProperty('playerPhotosMap_cacheTime_v1');
+    log_(LOG_LEVEL.INFO, 'invalidatePlayerPhotosCache_', '[Cache INVALIDATED]');
+  } catch (e) {
+    log_(LOG_LEVEL.WARN, 'invalidatePlayerPhotosCache_', 'Failed to invalidate cache: ' + e.message);
+  }
+}
+
+/**
+ * PlayerPhotos 시트 전체를 Map으로 배치 로딩 (Raw, 캐시 없음)
+ * @return {Object} { playerName: { photoUrl, playerType, introduction, displayOrder } } Map
+ * @private
+ */
+function getAllPlayerPhotosMap_Raw_() {
   try {
     const sheet = ensurePlayerPhotosSheet_();
     const lastRow = sheet.getLastRow();
@@ -520,23 +591,21 @@ function getAllPlayerPhotosMap_() {
     const data = sheet.getRange(2, 1, lastRow - 1, colsToRead).getValues();
     const photoMap = {};
 
-    // 헤더 확인 (Introduction, PlayerType 컬럼 존재 여부)
+    // 🔍 DEBUG: 헤더 확인 (참고용)
     const headers = sheet.getRange(1, 1, 1, colsToRead).getValues()[0];
-    const hasPlayerTypeColumn = headers.length >= 4 && String(headers[3]).trim().toLowerCase() === 'playertype';
-    const hasIntroductionColumn = headers.length >= 5 && String(headers[4]).trim().toLowerCase() === 'introduction';
+    log_(LOG_LEVEL.DEBUG, 'getAllPlayerPhotosMap_Raw_', '[DEBUG] Headers: ' + JSON.stringify(headers));
 
+    let debugCount = 0;
     data.forEach(row => {
       const playerName = String(row[0] || '').trim();
       const photoUrl = String(row[1] || '').trim();
-      // D열(인덱스 3)에서 PlayerType 읽기 (Phase 3.6.0)
-      const playerType = hasPlayerTypeColumn
-        ? String(row[3] || 'Key player').trim()
+      // D열(인덱스 3): PlayerType 강제 지정 (헤더 체크 없이)
+      const playerType = row.length >= 4 && row[3]
+        ? String(row[3]).trim()
         : 'Key player'; // 기본값
-      // E열(인덱스 4)에서 Introduction 읽기 (컬럼이 없으면 undefined)
-      const introduction = hasIntroductionColumn
-        ? (row.length >= 5 && (row[4] === true || String(row[4]).toUpperCase() === 'TRUE'))
-        : undefined;
-      // F열(인덱스 5)에서 DisplayOrder 읽기 (Phase 3.5.2)
+      // E열(인덱스 4): Introduction (TRUE/FALSE)
+      const introduction = row.length >= 5 && (row[4] === true || String(row[4]).toUpperCase() === 'TRUE');
+      // F열(인덱스 5): DisplayOrder
       const displayOrder = row.length >= 6 ? toInt_(row[5]) : 0;
       if (playerName) {
         photoMap[playerName] = {
@@ -545,16 +614,31 @@ function getAllPlayerPhotosMap_() {
           introduction: introduction,    // E열
           displayOrder: displayOrder     // F열
         };
+
+        // 🔍 DEBUG: 첫 5개 엔트리 로그
+        if (debugCount < 5) {
+          log_(LOG_LEVEL.DEBUG, 'getAllPlayerPhotosMap_Raw_', '[DEBUG] PhotoMap Entry #' + (debugCount + 1) + ': ' + playerName + ' → Type: "' + playerType + '" (D열 원본: "' + row[3] + '")');
+          debugCount++;
+        }
       }
     });
 
-    log_(LOG_LEVEL.INFO, 'getAllPlayerPhotosMap_', 'Photo Map 생성 완료', { count: Object.keys(photoMap).length });
+    log_(LOG_LEVEL.INFO, 'getAllPlayerPhotosMap_Raw_', 'Photo Map 생성 완료', { count: Object.keys(photoMap).length });
     return photoMap;
 
   } catch (e) {
-    log_(LOG_LEVEL.WARN, 'getAllPlayerPhotosMap_', 'Photo Map 생성 실패', { error: e.message });
+    log_(LOG_LEVEL.WARN, 'getAllPlayerPhotosMap_Raw_', 'Photo Map 생성 실패', { error: e.message });
     return {};
   }
+}
+
+/**
+ * PlayerPhotos 시트 전체를 Map으로 배치 로딩 (레거시 호환용)
+ * @return {Object} { playerName: { photoUrl, playerType, introduction, displayOrder } } Map
+ * @deprecated Use getAllPlayerPhotosMap_Cached() for better performance
+ */
+function getAllPlayerPhotosMap_() {
+  return getAllPlayerPhotosMap_Cached();
 }
 
 /**
@@ -740,7 +824,10 @@ function updateKeyPlayerPhoto(playerName, photoUrl) {
         throw new Error('PlayerPhotos 시트에 저장 실패');
       }
 
-      log_(LOG_LEVEL.INFO, 'updateKeyPlayerPhoto', '사진 URL 업데이트 완료', { playerName: validName });
+      // 캐시 무효화 (즉시 반영)
+      invalidatePlayerPhotosCache_();
+
+      log_(LOG_LEVEL.INFO, 'updateKeyPlayerPhoto', '사진 URL 업데이트 완료 (캐시 무효화)', { playerName: validName });
 
       return successResponse_({ playerName: validName, photoUrl: validUrl });
 
@@ -771,6 +858,51 @@ function getKeyPlayers() {
     // [Performance] PlayerPhotos 전체를 1회 배치 로딩
     const photoMap = getAllPlayerPhotosMap_();
 
+    // Phase 3.6.3: 테이블 레벨 타입 전파 (PlayerPhotos 시트 기준)
+    const featureTables = new Set();
+    const coreTables = new Set();
+    let debugCount = 0;
+
+    data.rows.forEach(row => {
+      const isKey = row[cols.keyplayer] === true || String(row[cols.keyplayer]).toUpperCase() === 'TRUE';
+      if (!isKey) return;
+
+      const playerName = String(row[cols.playerName] || '').trim();
+      const tableName = cols.tableName !== -1 ? String(row[cols.tableName] || '').trim() : '';
+      let tableNo = cols.tableNo !== -1 ? toInt_(row[cols.tableNo]) : 0;
+
+      // Phase 3.6.3: TableName="feature"면 가상 테이블 번호
+      const isFeatureTable = tableName.toLowerCase() === 'feature';
+      if (isFeatureTable && tableNo > 0) {
+        tableNo = 1000 + tableNo;
+      }
+
+      // PlayerPhotos에서 PlayerType 읽기
+      const playerData = photoMap[playerName] || { playerType: 'Key player' };
+      const playerType = playerData.playerType || 'Key player';
+
+      // 🔍 DEBUG: 타입 체크
+      if (debugCount < 3) {
+        log_(LOG_LEVEL.DEBUG, 'getKeyPlayers', '[DEBUG] Type Check: ' + playerName + ' → TableName: "' + tableName + '" → PlayerPhotos Type: "' + playerType + '" → Table: ' + tableNo);
+        debugCount++;
+      }
+
+      if (tableNo > 0) {
+        if (playerType === 'Feature' || isFeatureTable) {
+          featureTables.add(tableNo);
+          log_(LOG_LEVEL.DEBUG, 'getKeyPlayers', '[DEBUG] Feature Table 추가: Table #' + tableNo + ' (Player: ' + playerName + ')');
+        } else if (playerType === 'Core') {
+          coreTables.add(tableNo);
+          log_(LOG_LEVEL.DEBUG, 'getKeyPlayers', '[DEBUG] Core Table 추가: Table #' + tableNo + ' (Player: ' + playerName + ')');
+        }
+      }
+    });
+
+    log_(LOG_LEVEL.INFO, 'getKeyPlayers', '테이블 타입 식별 완료', {
+      featureTables: Array.from(featureTables),
+      coreTables: Array.from(coreTables)
+    });
+
     const players = data.rows
       .filter(row => {
         // K열(인덱스 10) 값 확인
@@ -780,19 +912,47 @@ function getKeyPlayers() {
       })
       .map((row, index) => {
         const playerName = String(row[cols.playerName] || '').trim();
+        const tableName = cols.tableName !== -1 ? String(row[cols.tableName] || '').trim() : '';
+        let tableNo = cols.tableNo !== -1 ? toInt_(row[cols.tableNo]) : 0;
 
-        // [Performance] PlayerPhotos Map에서 photoUrl + playerType + introduction 즉시 조회
+        // Phase 3.6.3: 가상 테이블 번호 (TableName="feature"인 경우 충돌 방지)
+        const isFeatureTable = tableName.toLowerCase() === 'feature';
+        const originalTableNo = tableNo;
+        if (isFeatureTable && tableNo > 0) {
+          tableNo = 1000 + tableNo; // 1→1001, 2→1002
+          log_(LOG_LEVEL.DEBUG, 'getKeyPlayers', '[VIRTUAL TABLE] ' + playerName + ': T' + originalTableNo + ' (feature) → Virtual T' + tableNo);
+        }
+
+        // PlayerPhotos에서 PlayerType 읽기 (Phase 3.6.2)
         const playerData = photoMap[playerName] || { photoUrl: '', playerType: 'Key player', introduction: false, displayOrder: 0 };
         const photoUrl = playerData.photoUrl || '';
-        const playerType = playerData.playerType || 'Key player'; // Phase 3.6.0
+        let playerType = playerData.playerType || 'Key player';
         const isIntroduced = playerData.introduction || false;
-        const displayOrder = playerData.displayOrder || (index + 1); // Phase 3.5.2: 자동 순서 번호
+        const displayOrder = playerData.displayOrder || (index + 1);
+
+        // Phase 3.6.3: Feature 테이블은 자동으로 PlayerType="Feature" 설정
+        if (isFeatureTable) {
+          playerType = 'Feature';
+        }
+
+        // Phase 3.6.2: 테이블 레벨 타입 전파 (우선순위: Feature > Core)
+        if (featureTables.has(tableNo)) {
+          playerType = 'Feature';
+        } else if (coreTables.has(tableNo)) {
+          playerType = 'Core';
+        }
+
+        // 🔍 DEBUG: 최종 플레이어 객체 (첫 5개)
+        if (index < 5) {
+          log_(LOG_LEVEL.DEBUG, 'getKeyPlayers', '[DEBUG] Final Player #' + (index + 1) + ': ' + playerName + ' → TableName: "' + tableName + '" → Table: ' + tableNo + ' → Type: "' + playerType + '"');
+        }
 
         return {
           pokerRoom: cols.pokerRoom !== -1 ? validatePokerRoom_(row[cols.pokerRoom]) : '',
-          tableName: cols.tableName !== -1 ? validateTableName_(row[cols.tableName]) : '',
+          tableName: tableName,
           tableId: cols.tableId !== -1 ? toInt_(row[cols.tableId]) : 0,
-          tableNo: cols.tableNo !== -1 ? toInt_(row[cols.tableNo]) : 0,
+          tableNo: tableNo,              // 가상 테이블 번호 적용
+          originalTableNo: originalTableNo, // 원본 테이블 번호 보존
           seatId: cols.seatId !== -1 ? toInt_(row[cols.seatId]) : 0,
           seatNo: cols.seatNo !== -1 ? toInt_(row[cols.seatNo]) : 0,
           playerId: cols.playerId !== -1 ? toInt_(row[cols.playerId]) : 0,
@@ -800,41 +960,45 @@ function getKeyPlayers() {
           nationality: cols.nationality !== -1 ? String(row[cols.nationality] || '').trim() : '',
           chipCount: cols.chipCount !== -1 ? toInt_(row[cols.chipCount]) : 0,
           photoUrl: photoUrl,           // PlayerPhotos 시트 B열
-          playerType: playerType,       // PlayerPhotos 시트 D열 (Phase 3.6.0)
+          playerType: playerType,       // PlayerPhotos 시트 D열 또는 Feature 테이블
           introduction: isIntroduced,   // PlayerPhotos 시트 E열
           displayOrder: displayOrder    // PlayerPhotos 시트 F열
         };
       })
       .filter(p => {
-        // Phase 3.6.0: Feature 플레이어 제외 (피처 테이블 전용)
-        if (p.playerType === 'Feature') return false;
+        // Phase 3.6.1: Feature 플레이어도 포함하여 반환 (클라이언트에서 분리 렌더링)
         return p.tableNo > 0 && p.seatNo > 0 && p.playerName;
       })
       .sort((a, b) => {
-        // Phase 3.6.0: PlayerType → Introduction → DisplayOrder → PlayerName 정렬
+        // Phase 3.6.1: PlayerType → 테이블별 그룹핑 → Introduction → DisplayOrder → PlayerName
 
-        // 1. PlayerType 우선순위 (Core > Key player)
-        const playerTypeOrder = { 'Core': 1, 'Key player': 2 };
+        // 1. PlayerType 우선순위 (Core > Key player > Feature)
+        const playerTypeOrder = { 'Core': 1, 'Key player': 2, 'Feature': 3 };
         const aTypeOrder = playerTypeOrder[a.playerType] || 99;
         const bTypeOrder = playerTypeOrder[b.playerType] || 99;
         if (aTypeOrder !== bTypeOrder) {
           return aTypeOrder - bTypeOrder;
         }
 
-        // 2. Introduction 우선순위 (true > false) - 동일 PlayerType 그룹 내
+        // 2. 테이블 번호 (같은 PlayerType 내에서 테이블별 그룹핑)
+        if (a.tableNo !== b.tableNo) {
+          return a.tableNo - b.tableNo;
+        }
+
+        // 3. Introduction 우선순위 (체크된 플레이어 먼저)
         const hasIntroduction = a.introduction !== undefined || b.introduction !== undefined;
         if (hasIntroduction) {
           if (a.introduction !== b.introduction) {
-            return b.introduction ? 1 : -1;
+            return b.introduction ? 1 : -1; // true가 앞으로
           }
         }
 
-        // 3. DisplayOrder 오름차순 (동일 PlayerType + Introduction 그룹 내)
+        // 4. DisplayOrder 오름차순
         if (a.displayOrder !== b.displayOrder) {
           return a.displayOrder - b.displayOrder;
         }
 
-        // 4. PlayerName 알파벳 순 (최종 정렬)
+        // 5. PlayerName 알파벳 순 (최종 정렬)
         return a.playerName.localeCompare(b.playerName);
       });
 
@@ -1283,8 +1447,9 @@ function updateIntroduction(playerName, isIntroduced) {
       }
 
       invalidateCache_();
+      invalidatePlayerPhotosCache_(); // PlayerPhotos 캐시도 무효화
 
-      log_(LOG_LEVEL.INFO, 'updateIntroduction', '소개 상태 업데이트 완료');
+      log_(LOG_LEVEL.INFO, 'updateIntroduction', '소개 상태 업데이트 완료 (캐시 무효화)');
       return successResponse_();
 
     } catch (e) {
@@ -1632,6 +1797,42 @@ function testImgurUploadPermission() {
     }
 
     throw e;
+  }
+}
+
+/* ===== DEBUG: Type 시트 구조 확인 ===== */
+function debugTypeSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(TYPE_SHEET_NAME);
+
+  if (!sheet) {
+    Logger.log('❌ Type 시트를 찾을 수 없습니다');
+    return;
+  }
+
+  const data = sheet.getRange(1, 1, 10, 8).getValues();
+
+  Logger.log('=== Type 시트 첫 10행 ===');
+  data.forEach((row, i) => {
+    Logger.log('Row ' + (i+1) + ': ' + JSON.stringify(row));
+  });
+
+  Logger.log('\n=== D열(Type) 확인 ===');
+  data.forEach((row, i) => {
+    if (i === 0) {
+      Logger.log('Header Row 1, D열: "' + row[3] + '"');
+    } else if (row[4]) { // E열(Name)이 있는 경우만
+      Logger.log('Row ' + (i+1) + ' [' + row[4] + ']: Type(D열) = "' + row[3] + '"');
+    }
+  });
+
+  Logger.log('\n=== 결론 ===');
+  if (data[0][3] === 'Type') {
+    Logger.log('✅ Row 1이 헤더입니다. 코드 정상 작동 예상.');
+  } else if (data[0][0] === 'Confirmed Players') {
+    Logger.log('❌ Row 1이 제목 행입니다. Row 1 삭제 필요!');
+  } else {
+    Logger.log('⚠️ 예상치 못한 구조. Row 1 데이터: ' + JSON.stringify(data[0]));
   }
 }
 

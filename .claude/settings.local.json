@@ -17,7 +17,9 @@
       "Bash(test:*)",
       "Bash(grep:*)",
       "Bash(npx @google/clasp login:*)",
-      "Read(//d/**)"
+      "Read(//d/**)",
+      "Read(//c/Users/레노버/Downloads/**)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": []

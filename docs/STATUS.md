@@ -3,20 +3,37 @@
 > **현재 상태** | 버전: [version.js](../version.js) 참조
 
 ## 📌 현재 위치
-**버전**: v3.6.0 (2025-01-19) - [version.js](../version.js)에서 관리
-**현재 상태**: ✅ **안정 버전** - Phase 3.6.0 완료, 배포 완료
+**버전**: v3.6.3 (2025-01-19) - [version.js](../version.js)에서 관리
+**현재 상태**: ✅ **안정 버전** - Phase 3.6.3 완료, 배포 준비 완료
 
 ---
 
 ## ⚠️ 블로커 (Critical)
 
-없음 - Phase 3.6.0 완료
+없음 - Phase 3.6.3 완료
 
 ---
 
 ## ✅ 최근 완료 (최신 5개)
 
-### 1. v3.6.0 - PlayerType 관리 (Core/Key player/Feature) ✅ 완료
+### 1. v3.6.3 - Virtual Table Numbers for Feature Tables ✅ 완료
+**날짜**: 2025-01-19
+**변경사항**:
+- ✅ TableName="feature" 가상 테이블 번호 (T1 → T1001)
+- ✅ PlayerType을 PlayerPhotos 시트에서만 읽기 (Type 시트 D열 제거)
+- ✅ Type 시트 "Confirmed Players" 제목 행 자동 스킵
+- ✅ 테이블 레벨 타입 전파 (Feature > Core 우선순위)
+- ✅ Feature 플레이어 UI: dimmed + bottom placement
+- ✅ 원본 테이블 번호 표시, 내부는 가상 번호 사용
+- ✅ 두 시트 역할 명확화: Type (배치), PlayerPhotos (메타데이터)
+
+**파일 변경**:
+- tracker_gs.js (readAll_Optimized_, getKeyPlayers, cols 정의)
+- tracker.html (originalTableNo 표시)
+- version.js (v3.6.3)
+- docs/PRD.md, PRD_SUMMARY.md, CHANGELOG.md, STATUS.md
+
+### 2. v3.6.0 - PlayerType 관리 (Core/Key player/Feature) ✅ 완료
 **날짜**: 2025-01-19
 **변경사항**:
 - ✅ PlayerPhotos D열 PlayerType 드롭다운 추가 (Core/Key player/Feature)
@@ -24,46 +41,6 @@
 - ✅ Feature 플레이어 키 목록 제외 (피처 테이블 전용)
 - ✅ 4단계 정렬: PlayerType > Introduction > DisplayOrder > PlayerName
 - ✅ 자동 마이그레이션: 4열/6열 → 7열 (UpdatedAt D→G)
-- ✅ ensurePlayerPhotosSheet_() 마이그레이션 로직 추가
-- ✅ getAllPlayerPhotosMap_() PlayerType 읽기
-- ✅ getKeyPlayers() 필터링 + 정렬 수정
-- ✅ setPlayerPhotoUrl_(), updateIntroduction() G열 대응
-- ✅ 성능 영향 0ms (클라이언트 정렬)
-- ✅ 버전 업데이트 (v3.5.5 → v3.6.0)
-
-**파일 변경**:
-- tracker_gs.js (5개 함수 수정)
-- version.js (v3.6.0)
-- CHANGELOG.md (v3.6.0 섹션)
-
----
-
-### 2. v3.5.5 - Fallback 정렬 로직 ✅ 완료
-**날짜**: 2025-01-19
-**변경사항**:
-- ✅ Introduction 컬럼 존재 여부 자동 감지 (헤더 체크)
-- ✅ Introduction 컬럼 없을 때: DisplayOrder → PlayerName 정렬 (이전 로직)
-- ✅ Introduction 컬럼 있을 때: Introduction → DisplayOrder → PlayerName 정렬
-- ✅ getAllPlayerPhotosMap_() 헤더 확인 로직 추가
-- ✅ getKeyPlayers() Fallback 정렬 로직 구현
-- ✅ 하위 호환성 보장 (legacy 시트 지원)
-- ✅ 성능 영향 0ms (헤더 1회 로드)
-- ✅ 버전 업데이트 (v3.5.4 → v3.5.5)
-
-**파일 변경**:
-- tracker_gs.js (getAllPlayerPhotosMap_, getKeyPlayers)
-- version.js (v3.5.5)
-- CHANGELOG.md (v3.5.5 섹션 추가)
-
----
-
-### 2. v3.5.4 - Introduction 기반 정렬 ✅ 완료
-**날짜**: 2025-01-19
-**변경사항**:
-- ✅ Introduction 체크박스 기반 정렬 (PlayerPhotos E열)
-- ✅ 3단계 정렬 우선순위: Introduction > DisplayOrder > PlayerName
-- ✅ 클라이언트 사이드 정렬 (Zero 성능 영향)
-- ✅ 버전 업데이트 (v3.5.3 → v3.5.4)
 
 ---
 
@@ -81,7 +58,7 @@
 - ✅ 버전 업데이트 (v3.5.1 → v3.5.2)
 - ✅ Git 커밋 및 푸시 (commit 921e1fe)
 
-### 2. v3.5.1 - 성능 테스트 도구 & 로딩 UX ✅ 완료
+### 4. v3.5.1 - 성능 테스트 도구 & 로딩 UX ✅ 완료
 **날짜**: 2025-01-16
 **변경사항**:
 - ✅ performance_test.js 추가 (Sheets API 성능 측정)
@@ -90,45 +67,31 @@
 - ✅ 통합 로딩 시스템 (오버레이 + 스피너)
 - ✅ 배포 완료 (@24)
 
-### 3. v3.5.0 - Firebase 하이브리드 캐싱 (제거됨) ✅ 완료
+### 5. v3.5.0 - Firebase 하이브리드 캐싱 (제거됨) ✅ 완료
 **날짜**: 2025-01-15
 **변경사항**:
 - ✅ Firebase Realtime Database 통합 (99% 성능 개선)
 - ⚠️ v3.5.1에서 제거됨 (166줄 삭제, 보안 우선)
 - ✅ Sheets 기반 캐싱으로 복귀 (96% 성능 유지)
 
-### 4. v3.4.1 - 배치 로딩 & 캐싱 최적화 ✅ 완료
-**날짜**: 2025-10-15
-**변경사항**:
-- ✅ getAllPlayerPhotosMap_() 배치 로딩 함수
-- ✅ 메모리 캐시 + CacheService 이중 캐싱
-- ✅ 캐시 TTL 30초 확장
-- ✅ 성능 개선: 2.5초 → 0.3초 (88% 개선)
-
-### 5. v3.4.0 - PlayerPhotos 영구 저장 ✅ 완료
-**날짜**: 2025-10-15
-**변경사항**:
-- ✅ PlayerPhotos 시트 구조 확정 (PlayerName, PhotoURL)
-- ✅ 사진 저장/조회 함수 구현
-- ✅ Type 시트와 독립적 관리
-- ✅ 배포 완료 (@23)
 
 ---
 
 ## 🚧 진행 중
 
-없음 - Phase 3.5.2 완료
+없음 - Phase 3.6.3 완료
 
 ---
 
 ## 📝 AI 메모리
 
 ### 마지막 작업
-- **v3.5.2 배포**: 키 플레이어 번호 뱃지 & 소개 체크박스 (@24)
-- **PlayerPhotos 확장**: E열 (Introduction), F열 (DisplayOrder) 추가
-- **번호 뱃지 UI**: 보라색 그라디언트 (#667eea → #764ba2)
-- **자동 마이그레이션**: 4열→5열→6열 (기존 시트 자동 업그레이드)
-- **Git 커밋**: 버전 업데이트 + 문서 동기화 (commit 921e1fe)
+- **v3.6.3 완료**: Virtual Table Numbers for Feature Tables
+- **가상 테이블 번호**: TableName="feature" → T1001+ (충돌 방지)
+- **데이터 소스 명확화**: Type (배치), PlayerPhotos (메타데이터)
+- **Type 시트 D열**: PlayerType 아님, TableNo임
+- **PlayerType 읽기**: PlayerPhotos 시트에서만
+- **제목 행 자동 스킵**: "Confirmed Players" 감지
 
 ### 다음 할 일 (선택지)
 **Option A (추천)**: v3.6.0 - DisplayOrder 관리 UI
@@ -169,14 +132,15 @@
 4. **Player Photos**: 96px 프로필 사진 + 소개 체크박스 + 번호 순서
 5. **Performance**: 배치 로딩 + CacheService (로딩 0.5초)
 
-### PlayerPhotos 시트 구조 (v3.5.2)
+### PlayerPhotos 시트 구조 (v3.6.3)
 ```
 A: PlayerName       - 플레이어 이름
 B: PhotoURL         - Imgur URL
 C: CreatedAt        - 생성 시간 (ISO 8601)
-D: UpdatedAt        - 수정 시간 (ISO 8601)
+D: PlayerType       - Core/Key player/Feature (드롭다운)
 E: Introduction     - 소개 체크박스 (TRUE/FALSE)
 F: DisplayOrder     - 번호 순서 (1, 2, 3...)
+G: UpdatedAt        - 수정 시간 (ISO 8601)
 ```
 
 ### 독립성

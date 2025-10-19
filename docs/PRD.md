@@ -309,21 +309,37 @@
   - 배열 정렬 복잡도: O(n log n)
   - 10명 기준: ~1ms
   - 총 로딩 시간: 500ms (v3.5.3 대비 동일)
-- **사용 시나리오**:
-  ```
-  Before:
-  #1 Alice (Introduction: false)
-  #2 Bob (Introduction: false)
-  #3 Charlie (Introduction: true)
-
-  After:
-  #3 Charlie (Introduction: true) ← 최상단 배치
-  #1 Alice (Introduction: false)
-  #2 Bob (Introduction: false)
-  ```
 - **상태**: ✅ 완료 (v3.5.4)
 - **배포**: 코드 준비 완료 (2025-01-19)
 - **의존성**: Phase 3.5.2 (PlayerPhotos E열)
+
+---
+
+## Phase 3.6: PlayerType 관리 (v3.6.0-3.6.3) ✅
+
+### 3.6.0 PlayerType Dropdown ✅ 완료
+- **근거**: Core/Feature 플레이어 구분 필요
+- **PlayerPhotos 스키마 확장** (6열 → 7열):
+  - D열: PlayerType (Core/Key player/Feature, 드롭다운)
+  - UpdatedAt: D열 → G열 이동
+- **완료 내역**:
+  - [x] PlayerPhotos D열 드롭다운 추가
+  - [x] 4단계 정렬: PlayerType > Introduction > DisplayOrder > PlayerName
+  - [x] Feature 플레이어 키 목록 제외
+  - [x] 자동 마이그레이션 (4열/6열 → 7열)
+- **상태**: ✅ 완료 (v3.6.0, 2025-01-19)
+
+### 3.6.3 Virtual Table Numbers ✅ 완료
+- **근거**: TableName="feature" 테이블 번호 충돌 방지
+- **완료 내역**:
+  - [x] TableName="feature" 감지 시 가상 테이블 번호 부여 (T1 → T1001)
+  - [x] PlayerType을 PlayerPhotos 시트에서만 읽기 (Type 시트 D열 제거)
+  - [x] TableName="feature"면 PlayerType="Feature" 자동 할당
+  - [x] 테이블 레벨 타입 전파 (Feature > Core 우선순위)
+  - [x] Feature 플레이어 UI: dimmed (opacity 0.5) + bottom placement
+  - [x] 화면 표시: 원본 테이블 번호 (T1, T2), 내부: 가상 번호 (T1001)
+  - [x] Type 시트 "Confirmed Players" 제목 행 자동 스킵
+- **상태**: ✅ 완료 (v3.6.3, 2025-01-19)
 
 ---
 

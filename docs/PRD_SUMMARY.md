@@ -4,12 +4,12 @@
 
 ---
 
-## 📊 현재 상태 (v3.5.4)
+## 📊 현재 상태 (v3.6.3)
 
-**버전**: v3.5.4
-**이름**: Introduction-based Sorting
+**버전**: v3.6.3
+**이름**: Virtual Table Numbers for Feature Tables
 **배포일**: 2025-01-19
-**배포 ID**: @24 (pending @25)
+**배포 ID**: @24
 **상태**: ✅ 코드 완료, 배포 준비 완료
 
 ---
@@ -34,11 +34,12 @@
 - **Introduction 체크박스**: PlayerPhotos E열로 이동 (영구 보존)
 - **DisplayOrder 관리**: PlayerPhotos F열 (자동 번호 부여)
 
-### 4. Introduction 기반 정렬 (Phase 3.5.4) ✅ 최신
-- **Introduction 체크박스 우선순위**: 체크된 플레이어 최상단 배치
-- **3단계 정렬**: Introduction > DisplayOrder > PlayerName
-- **Zero 성능 영향**: 클라이언트 사이드 정렬 (~1ms)
-- **자동 적용**: getKeyPlayers() 응답에 정렬된 목록 반환
+### 4. PlayerType 관리 (Phase 3.6.0-3.6.3) ✅ 최신
+- **PlayerType 드롭다운**: PlayerPhotos D열 (Core/Key player/Feature)
+- **4단계 정렬**: PlayerType > Introduction > DisplayOrder > PlayerName
+- **가상 테이블 번호**: TableName="feature" → T1001+ (충돌 방지)
+- **테이블 레벨 타입 전파**: Feature > Core 우선순위
+- **Feature 플레이어 UI**: 비활성화 표시 + 하단 배치
 
 ---
 
@@ -48,12 +49,13 @@
 A: PlayerName       - 플레이어 이름
 B: PhotoURL         - Imgur URL
 C: CreatedAt        - 생성 시간 (ISO 8601)
-D: UpdatedAt        - 수정 시간 (ISO 8601)
+D: PlayerType       - Core/Key player/Feature (드롭다운)
 E: Introduction     - 소개 체크박스 (TRUE/FALSE)
 F: DisplayOrder     - 번호 순서 (1, 2, 3...)
+G: UpdatedAt        - 수정 시간 (ISO 8601)
 ```
 
-**자동 마이그레이션**: 4열 → 5열 → 6열 (기존 시트 자동 업그레이드)
+**자동 마이그레이션**: 4열 → 6열 → 7열 (기존 시트 자동 업그레이드)
 
 ---
 
@@ -161,9 +163,9 @@ npx @google/clasp deploy
 
 | 파일 | 버전 | 역할 |
 |------|------|------|
-| [tracker_gs.js](../tracker_gs.js) | v3.5.2 | 서버 로직 (Apps Script) |
-| [tracker.html](../tracker.html) | v3.5.2 | UI + 클라이언트 로직 |
-| [version.js](../version.js) | v3.5.2 | 버전 관리 SSOT |
+| [tracker_gs.js](../tracker_gs.js) | v3.6.3 | 서버 로직 (Apps Script) |
+| [tracker.html](../tracker.html) | v3.6.3 | UI + 클라이언트 로직 |
+| [version.js](../version.js) | v3.6.3 | 버전 관리 SSOT |
 | [performance_test.js](../performance_test.js) | v3.5.1 | 성능 측정 도구 |
 | [appsscript.json](../appsscript.json) | v3.2.0 | Apps Script 설정 |
 
@@ -194,6 +196,6 @@ npx @google/clasp deploy
 
 ---
 
-**마지막 업데이트**: 2025-01-16
+**마지막 업데이트**: 2025-01-19
 **작성자**: Claude Code
-**다음 리뷰**: v3.6.0 or v4.0.0 시작 시
+**다음 리뷰**: v4.0.0 시작 시
