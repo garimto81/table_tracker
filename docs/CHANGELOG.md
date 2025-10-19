@@ -2,6 +2,75 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.5.5 (2025-01-19) - Fallback Sorting Logic 🔄
+
+### 🔄 핵심 기능
+**자동 Fallback 정렬 로직**:
+- Introduction 컬럼이 **없을 때**: DisplayOrder → PlayerName 정렬 (이전 로직)
+- Introduction 컬럼이 **있을 때**: Introduction → DisplayOrder → PlayerName 정렬 (v3.5.4)
+- 헤더 체크로 컬럼 존재 여부 자동 감지
+- 하위 호환성 보장 (legacy PlayerPhotos 시트 지원)
+
+### ✨ 수정 함수
+**tracker_gs.js**:
+- `getAllPlayerPhotosMap_()`: Introduction 컬럼 헤더 확인 로직 추가
+  ```javascript
+  const headers = sheet.getRange(1, 1, 1, colsToRead).getValues()[0];
+  const hasIntroductionColumn = headers.length >= 5 &&
+    String(headers[4]).trim().toLowerCase() === 'introduction';
+
+  const introduction = hasIntroductionColumn
+    ? (row[4] === true || String(row[4]).toUpperCase() === 'TRUE')
+    : undefined;  // 컬럼 없으면 undefined
+  ```
+
+- `getKeyPlayers()`: Fallback 정렬 로직 추가
+  ```javascript
+  .sort((a, b) => {
+    const hasIntroduction = a.introduction !== undefined || b.introduction !== undefined;
+
+    if (hasIntroduction) {
+      // Introduction 컬럼 있음 → 3단계 정렬
+      if (a.introduction !== b.introduction) return b.introduction ? 1 : -1;
+      if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+    } else {
+      // Introduction 컬럼 없음 → 2단계 정렬 (이전 로직)
+      if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder;
+    }
+    return a.playerName.localeCompare(b.playerName);
+  })
+  ```
+
+### 🎯 사용 시나리오
+**Case 1: Introduction 컬럼 있음 (신규 시트)**:
+```
+PlayerPhotos: PlayerName | PhotoURL | ... | Introduction | DisplayOrder
+            Alice       | url1     | ... | true         | 2
+            Bob         | url2     | ... | false        | 1
+
+Result: Alice (#1) → Bob (#2)  ✅ Introduction=true 최우선
+```
+
+**Case 2: Introduction 컬럼 없음 (구버전 시트)**:
+```
+PlayerPhotos: PlayerName | PhotoURL | ... | DisplayOrder
+            Alice       | url1     | ... | 2
+            Bob         | url2     | ... | 1
+
+Result: Bob (#1) → Alice (#2)  ✅ DisplayOrder 정렬 (이전 로직)
+```
+
+### 🛡️ 하위 호환성
+- **v3.5.4 이전 시트**: Introduction 컬럼 없음 → DisplayOrder 정렬
+- **v3.5.4 이후 시트**: Introduction 컬럼 있음 → Introduction 우선 정렬
+- 마이그레이션 불필요 (자동 감지)
+
+### 📊 성능
+- 성능 영향: **0ms** (헤더 1회 로드, 클라이언트 정렬)
+- 메모리 영향: **+1 array** (헤더 캐싱)
+
+---
+
 ## v3.5.4 (2025-01-19) - Introduction-based Sorting 🔝
 
 ### 🔝 핵심 기능

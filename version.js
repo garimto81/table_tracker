@@ -2,16 +2,16 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.5.4',
-  name: 'Introduction-based Sorting',
+  current: 'v3.5.5',
+  name: 'Fallback Sorting Logic',
   date: '2025-01-19',
-  phase: '3.5.4',
+  phase: '3.5.5',
   changes: [
-    '🔝 Introduction checkbox sorting (PlayerPhotos E column)',
-    '✨ Introduced players appear at the top',
+    '🔄 Auto-fallback to DisplayOrder sorting when Introduction column missing',
+    '✨ Introduction-based sorting (when column exists)',
     '📊 Sort priority: Introduction > DisplayOrder > PlayerName',
-    '⚡ Zero performance impact (client-side sorting)',
-    '🎯 Enhanced key player visibility'
+    '🛡️ Backward compatibility with legacy PlayerPhotos sheets',
+    '⚡ Zero performance impact (client-side sorting)'
   ],
   deployment: {
     id: '@24',
@@ -21,14 +21,14 @@ const VERSION = {
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
   },
   files: {
-    'tracker_gs.js': 'v3.5.4',
+    'tracker_gs.js': 'v3.5.5',
     'tracker.html': 'v3.5.3',
     'performance_test.js': 'v3.5.1',
     'appsscript.json': 'v3.2.0',
-    'version.js': 'v3.5.4',
-    'docs/CHANGELOG.md': 'v3.5.4',
-    'docs/STATUS.md': 'v3.5.4',
-    'docs/PRD.md': 'v3.5.4',
+    'version.js': 'v3.5.5',
+    'docs/CHANGELOG.md': 'v3.5.5',
+    'docs/STATUS.md': 'v3.5.5',
+    'docs/PRD.md': 'v3.5.5',
     'docs/LLD.md': 'v2.4.0',
     'docs/PLAN.md': 'v2.4.0',
     'docs/MIGRATION_SEATS_ONLY.md': 'v3.0.0',
@@ -41,14 +41,14 @@ const VERSION = {
   },
   status: {
     state: '✅ Stable version (Code ready)',
-    phase: 'Phase 3.5.4 (Introduction-based Sorting)',
+    phase: 'Phase 3.5.5 (Fallback Sorting Logic)',
     blockers: [],
     lastCompleted: [
+      '✅ Auto-fallback to DisplayOrder sorting (v3.5.5)',
       '✅ Introduction-based sorting implemented (v3.5.4)',
       '✅ Complete English UI translation (v3.5.3)',
       '✅ Key player number badge added (v3.5.2)',
-      '✅ Introduction checkbox moved to PlayerPhotos column E (v3.5.2)',
-      '✅ Performance testing tools added (v3.5.1)'
+      '✅ Introduction checkbox moved to PlayerPhotos column E (v3.5.2)'
     ]
   },
   next: {
