@@ -1,8 +1,8 @@
 # Poker Tracker - PRD Summary
 
-**현재 버전**: v3.5.0 (Firebase Realtime Cache - Hybrid Architecture)
-**최종 업데이트**: 2025-10-15
-**상태**: ✅ 코드 완료, ⚠️ Firebase 설정 필요
+**현재 버전**: v3.6.4 (TableName Priority Sorting)
+**최종 업데이트**: 2025-01-19
+**상태**: ✅ Stable - Code ready for deployment
 
 ---
 

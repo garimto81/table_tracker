@@ -341,6 +341,22 @@
   - [x] Type 시트 "Confirmed Players" 제목 행 자동 스킵
 - **상태**: ✅ 완료 (v3.6.3, 2025-01-19)
 
+### 3.6.4 TableName Priority Sorting ✅ 완료
+- **근거**: 테이블 이름별 그룹핑 우선 필요
+- **완료 내역**:
+  - [x] Type.tableName을 Core/Feature 카테고리 필터링 조건에 추가
+  - [x] 정렬 순서 변경: TableName (최우선) → PlayerType → Table# → Introduction → DisplayOrder
+  - [x] 빈 PlayerType은 'Key player' 기본값으로 처리
+  - [x] 테이블 이름별 플레이어 조직 개선
+- **정렬 로직**:
+  1. **TableName 알파벳 순** (최우선 그룹핑)
+  2. PlayerType (Core → Key player → Feature)
+  3. Table 번호 순차 정렬
+  4. Introduction (체크된 플레이어 우선)
+  5. DisplayOrder
+  6. PlayerName 알파벳순
+- **상태**: ✅ 완료 (v3.6.4, 2025-01-19)
+
 ---
 
 ## Phase 4: 향후 개선 사항 (v4.x 예정)

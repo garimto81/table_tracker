@@ -2,17 +2,16 @@
 // SINGLE SOURCE OF TRUTH for all version information
 
 const VERSION = {
-  current: 'v3.6.3',
-  name: 'Virtual Table Numbers for Feature Tables',
+  current: 'v3.6.4',
+  name: 'TableName Priority Sorting',
   date: '2025-01-19',
-  phase: '3.6.3',
+  phase: '3.6.4',
   changes: [
-    '🎯 Virtual table numbers (T1001+) for TableName="feature" to prevent conflicts',
-    '📊 PlayerType now read from PlayerPhotos sheet (D column)',
-    '🔧 Auto-skip "Confirmed Players" title row in Type sheet',
-    '🎬 Feature players: dimmed UI + bottom placement',
-    '👑 Core/Feature table-level type propagation (Priority: Feature > Core)',
-    '🖼️ Display original table numbers (T1, T2) while using virtual numbers internally'
+    '🏆 TableName-first sorting (최우선 그룹핑)',
+    '🎯 Type.tableName added to category filter (Core/Feature detection)',
+    '🔢 Sorting order: TableName → PlayerType → Table# → Introduction → DisplayOrder',
+    '✨ Empty PlayerType defaults to "Key player" (fallback)',
+    '📋 Improved player organization by table name groups'
   ],
   deployment: {
     id: '@24',
@@ -22,14 +21,14 @@ const VERSION = {
     spreadsheetId: '19e7eDjoZRFZooghZJF3XmOZzZcgmqsp9mFAfjvJWhj4'
   },
   files: {
-    'tracker_gs.js': 'v3.6.3',
+    'tracker_gs.js': 'v3.6.4',
     'tracker.html': 'v3.6.3',
     'performance_test.js': 'v3.5.1',
     'appsscript.json': 'v3.2.0',
-    'version.js': 'v3.6.3',
-    'docs/CHANGELOG.md': 'v3.6.3',
+    'version.js': 'v3.6.4',
+    'docs/CHANGELOG.md': 'v3.6.4',
     'docs/STATUS.md': 'v3.6.3',
-    'docs/PRD.md': 'v3.6.3',
+    'docs/PRD.md': 'v3.6.4',
     'docs/LLD.md': 'v2.4.0',
     'docs/PLAN.md': 'v2.4.0',
     'docs/MIGRATION_SEATS_ONLY.md': 'v3.0.0',
@@ -37,7 +36,7 @@ const VERSION = {
     'docs/PHASE_3.1_SUMMARY.md': 'v3.1.0',
     'docs/PERFORMANCE_Tracker.md': 'v3.5.0',
     'docs/PERFORMANCE_TEST_GUIDE.md': 'v3.5.1',
-    'PRD_SUMMARY.md': 'v3.5.0',
+    'PRD_SUMMARY.md': 'v3.6.4',
     'ROLLBACK_INFO.md': 'v3.0.1'
   },
   status: {

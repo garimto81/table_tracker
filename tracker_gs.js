@@ -10,11 +10,11 @@
 
 /* ===== 버전 관리 ===== */
 // version.js에서 버전 정보 로드 (Google Apps Script 환경)
-let TRACKER_VERSION = 'v3.6.3'; // Fallback version
+let TRACKER_VERSION = 'v3.6.4'; // Fallback version
 try {
   // version.js가 같은 프로젝트에 있다면 로드 시도
   // Google Apps Script는 require() 미지원이므로 수동 동기화 필요
-  TRACKER_VERSION = 'v3.6.3'; // version.js의 VERSION.current와 수동 동기화
+  TRACKER_VERSION = 'v3.6.4'; // version.js의 VERSION.current와 수동 동기화
 } catch (e) {
   Logger.log('version.js 로드 실패, fallback 버전 사용: ' + TRACKER_VERSION);
 }
@@ -888,12 +888,12 @@ function getKeyPlayers() {
       }
 
       if (tableNo > 0) {
-        if (playerType === 'Feature' || isFeatureTable) {
+        if (playerType === 'Feature' || isFeatureTable || tableName.toLowerCase() === 'feature') {
           featureTables.add(tableNo);
-          log_(LOG_LEVEL.DEBUG, 'getKeyPlayers', '[DEBUG] Feature Table 추가: Table #' + tableNo + ' (Player: ' + playerName + ')');
-        } else if (playerType === 'Core') {
+          log_(LOG_LEVEL.DEBUG, 'getKeyPlayers', '[DEBUG] Feature Table 추가: Table #' + tableNo + ' (Player: ' + playerName + ', TableName: ' + tableName + ')');
+        } else if (playerType === 'Core' || tableName.toLowerCase() === 'core') {
           coreTables.add(tableNo);
-          log_(LOG_LEVEL.DEBUG, 'getKeyPlayers', '[DEBUG] Core Table 추가: Table #' + tableNo + ' (Player: ' + playerName + ')');
+          log_(LOG_LEVEL.DEBUG, 'getKeyPlayers', '[DEBUG] Core Table 추가: Table #' + tableNo + ' (Player: ' + playerName + ', TableName: ' + tableName + ')');
         }
       }
     });
@@ -970,22 +970,30 @@ function getKeyPlayers() {
         return p.tableNo > 0 && p.seatNo > 0 && p.playerName;
       })
       .sort((a, b) => {
-        // Phase 3.6.1: PlayerType → 테이블별 그룹핑 → Introduction → DisplayOrder → PlayerName
+        // Phase 3.6.3: TableName (최우선) → PlayerType → Table 번호 → Introduction → DisplayOrder → PlayerName
 
-        // 1. PlayerType 우선순위 (Core > Key player > Feature)
+        // 1. TableName 알파벳 순 (최우선 그룹핑)
+        const aTableName = (a.tableName || '').toLowerCase();
+        const bTableName = (b.tableName || '').toLowerCase();
+        if (aTableName !== bTableName) {
+          return aTableName.localeCompare(bTableName);
+        }
+
+        // 2. PlayerType 우선순위 (Core > Key player > Feature)
+        // 타입값이 없으면 'Key player'로 처리
         const playerTypeOrder = { 'Core': 1, 'Key player': 2, 'Feature': 3 };
-        const aTypeOrder = playerTypeOrder[a.playerType] || 99;
-        const bTypeOrder = playerTypeOrder[b.playerType] || 99;
+        const aTypeOrder = playerTypeOrder[a.playerType] || 2; // 기본값: Key player
+        const bTypeOrder = playerTypeOrder[b.playerType] || 2; // 기본값: Key player
         if (aTypeOrder !== bTypeOrder) {
           return aTypeOrder - bTypeOrder;
         }
 
-        // 2. 테이블 번호 (같은 PlayerType 내에서 테이블별 그룹핑)
+        // 3. 테이블 번호 (같은 TableName, PlayerType 내에서 순차 정렬)
         if (a.tableNo !== b.tableNo) {
           return a.tableNo - b.tableNo;
         }
 
-        // 3. Introduction 우선순위 (체크된 플레이어 먼저)
+        // 4. Introduction 우선순위 (체크된 플레이어 먼저)
         const hasIntroduction = a.introduction !== undefined || b.introduction !== undefined;
         if (hasIntroduction) {
           if (a.introduction !== b.introduction) {
@@ -993,12 +1001,12 @@ function getKeyPlayers() {
           }
         }
 
-        // 4. DisplayOrder 오름차순
+        // 5. DisplayOrder 오름차순
         if (a.displayOrder !== b.displayOrder) {
           return a.displayOrder - b.displayOrder;
         }
 
-        // 5. PlayerName 알파벳 순 (최종 정렬)
+        // 6. PlayerName 알파벳 순 (최종 정렬)
         return a.playerName.localeCompare(b.playerName);
       });
 

@@ -2,6 +2,58 @@
 
 > **변경 이력** | 현재 버전: [version.js](../version.js) 참조
 
+## v3.6.4 (2025-01-19) - TableName Priority Sorting 🏆
+
+### 🏆 핵심 기능
+**TableName 최우선 정렬 그룹핑**:
+- Type 시트 B열 (TableName)을 정렬 최우선 순위로 적용
+- 테이블 이름별로 플레이어 그룹화 (가독성 극대화)
+- 빈 PlayerType 값은 'Key player' 기본값 처리
+
+### 🎯 정렬 우선순위 (6단계)
+```
+1. TableName (알파벳 순) ← 최우선 그룹핑
+2. PlayerType (Core → Key player → Feature)
+3. TableNo (오름차순)
+4. Introduction (true > false)
+5. DisplayOrder (오름차순)
+6. PlayerName (알파벳 순)
+```
+
+### 📊 카테고리 필터링 개선
+**Type.tableName 조건 추가**:
+- Feature 테이블 감지: `tableName.toLowerCase() === 'feature'`
+- Core 테이블 감지: `tableName.toLowerCase() === 'core'`
+- 기존 PlayerType 조건과 OR 결합
+
+### ✨ 수정 함수
+**tracker_gs.js**:
+- `getKeyPlayers()` (lines 972-1011): 6단계 정렬 알고리즘 적용
+- `getKeyPlayers()` (lines 891-897): tableName 카테고리 필터링 추가
+- 기본 PlayerType: 99 → 2 (Key player) 변경
+
+### 🎬 플레이어 조직 개선
+- **Before**: PlayerType → Table# 순 정렬
+- **After**: TableName → PlayerType → Table# 순 정렬
+- **효과**: 같은 테이블 이름의 플레이어들이 그룹으로 모임
+
+### 📊 예시
+```
+TableName="Ocean Blue", PlayerType="Core", TableNo=1
+TableName="Ocean Blue", PlayerType="Key player", TableNo=1
+TableName="Ocean Blue", PlayerType="Key player", TableNo=2
+TableName="Pearl", PlayerType="Core", TableNo=5
+TableName="Pearl", PlayerType="Feature", TableNo=5
+```
+
+### 📝 문서 업데이트
+- [version.js](../version.js): v3.6.3 → v3.6.4
+- [tracker_gs.js](../tracker_gs.js): TRACKER_VERSION 동기화
+- [docs/PRD.md](PRD.md): Phase 3.6.4 섹션 추가
+- [PRD_SUMMARY.md](PRD_SUMMARY.md): 현재 버전 업데이트
+
+---
+
 ## v3.6.3 (2025-01-19) - Virtual Table Numbers for Feature Tables 🎯
 
 ### 🎯 핵심 기능
